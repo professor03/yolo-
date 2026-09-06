@@ -1,0 +1,62 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>LearnSight｜學習時段</title>
+  <style>
+    :root { color-scheme: dark; --bg: #081426; --card: #10243d; --line: #25425f; --mint: #62e6bd; --text: #e8f1fb; --muted: #9fb4c9; }
+    * { box-sizing: border-box; } body { margin: 0; min-height: 100vh; background: radial-gradient(circle at 15% 0%, #1b3e61, var(--bg) 48%); color: var(--text); font: 16px system-ui, sans-serif; }
+    main { width: min(760px, calc(100% - 32px)); margin: 48px auto; } h1 { margin-bottom: 6px; } p { color: var(--muted); line-height: 1.65; }
+    .card { margin-top: 22px; padding: 24px; border: 1px solid var(--line); border-radius: 16px; background: color-mix(in srgb, var(--card), transparent 8%); }
+    label { display: block; margin: 14px 0 6px; color: var(--muted); } input { width: 100%; padding: 12px; border: 1px solid var(--line); border-radius: 9px; background: #091a2d; color: var(--text); }
+    button { margin: 16px 8px 0 0; padding: 10px 14px; border: 0; border-radius: 8px; background: var(--mint); color: #053126; cursor: pointer; font-weight: 700; } button.secondary { background: #274766; color: var(--text); } button:disabled { opacity: .45; cursor: not-allowed; }
+    #status { white-space: pre-wrap; padding: 16px; border-radius: 9px; background: #091a2d; color: var(--mint); min-height: 62px; }
+    .privacy { border-left: 3px solid var(--mint); padding-left: 12px; }
+  </style>
+</head>
+<body>
+  <main>
+    <h1>LearnSight</h1>
+    <p>以「讀書時段 + 人員出現訊號」做自我回顧的 MVP。這個頁面不存影像、不做人臉辨識，也不判斷專注度或姿勢。</p>
+    <section class="card">
+      <label for="goal">這個時段的目標</label>
+      <input id="goal" value="複習演算法第二章" maxlength="240">
+      <label for="minutes">預計分鐘數</label>
+      <input id="minutes" type="number" min="5" max="480" value="30">
+      <button id="start">開始時段</button>
+      <button id="sync" class="secondary" disabled>同步影片偵測人數</button>
+      <button id="present" class="secondary" disabled>送出「有人」訊號</button>
+      <button id="away" class="secondary" disabled>送出「無人」訊號</button>
+      <button id="end" class="secondary" disabled>結束時段</button>
+    </section>
+    <section class="card">
+      <strong>狀態</strong>
+      <pre id="status">請先開始一個讀書時段。</pre>
+    </section>
+    <p class="privacy">串接方式：偵測程式可將 <code>person_count</code> 送到 LearnSight API；目前這個按鈕是用來驗證流程，並不會打開攝影機。</p>
+  </main>
+  <script>
+    let sessionId = null;
+    const token = () => localStorage.getItem('access_token');
+    const headers = () => ({ 'Content-Type': 'application/json', 'Authorization': `Bearer ${token() || ''}` });
+    const status = document.getElementById('status');
+    const setButtons = active => ['sync', 'present', 'away', 'end'].forEach(id => document.getElementById(id).disabled = !active);
+    const show = data => status.textContent = JSON.stringify(data, null, 2);
+    async function request(path, body) {
+      const response = await fetch(`/api/v1/learnsight${path}`, { method: 'POST', headers: headers(), body: body ? JSON.stringify(body) : undefined });
+      const data = await response.json();
+      if (!response.ok) throw new Error(data.detail || '請求失敗');
+      show(data); return data;
+    }
+    document.getElementById('start').onclick = async () => {
+      try { const data = await request('/sessions', { study_goal: goal.value, planned_minutes: Number(minutes.value), source_id: 'learnsight-demo' }); sessionId = data.session_id; setButtons(true); }
+      catch (error) { status.textContent = `無法開始：${error.message}\n請先由登入頁登入，並確認 access_token 已建立。`; }
+    };
+    document.getElementById('present').onclick = () => request(`/sessions/${sessionId}/observations`, { person_count: 1, average_confidence: .8 }).catch(error => status.textContent = error.message);
+    document.getElementById('sync').onclick = () => request(`/sessions/${sessionId}/sync`).catch(error => status.textContent = error.message);
+    document.getElementById('away').onclick = () => request(`/sessions/${sessionId}/observations`, { person_count: 0 }).catch(error => status.textContent = error.message);
+    document.getElementById('end').onclick = async () => { try { await request(`/sessions/${sessionId}/end`); setButtons(false); } catch (error) { status.textContent = error.message; } };
+  </script>
+</body>
+</html>

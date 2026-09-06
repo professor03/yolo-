@@ -1,0 +1,896 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>YOLO 系統管理 - 管理員面板</title>
+    <link
+      href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css"
+      rel="stylesheet"
+    />
+    <style>
+      * {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+      }
+
+      body {
+        font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        min-height: 100vh;
+        color: #333;
+      }
+
+      .container {
+        max-width: 1400px;
+        margin: 0 auto;
+        padding: 20px;
+      }
+
+      .header {
+        background: rgba(255, 255, 255, 0.1);
+        backdrop-filter: blur(10px);
+        border-radius: 20px;
+        padding: 30px;
+        margin-bottom: 30px;
+        text-align: center;
+        color: white;
+        box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+      }
+
+      .header h1 {
+        font-size: 2.5rem;
+        margin-bottom: 10px;
+        text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.3);
+      }
+
+      .nav-tabs {
+        display: flex;
+        background: rgba(255, 255, 255, 0.1);
+        border-radius: 15px;
+        padding: 5px;
+        margin-bottom: 30px;
+        backdrop-filter: blur(10px);
+      }
+
+      .nav-tab {
+        flex: 1;
+        padding: 15px 20px;
+        text-align: center;
+        background: transparent;
+        border: none;
+        border-radius: 10px;
+        color: white;
+        cursor: pointer;
+        transition: all 0.3s ease;
+        font-size: 1rem;
+        font-weight: 500;
+      }
+
+      .nav-tab.active {
+        background: rgba(255, 255, 255, 0.2);
+        box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+      }
+
+      .nav-tab:hover {
+        background: rgba(255, 255, 255, 0.15);
+      }
+
+      .tab-content {
+        display: none;
+      }
+
+      .tab-content.active {
+        display: block;
+      }
+
+      .card {
+        background: rgba(255, 255, 255, 0.95);
+        backdrop-filter: blur(10px);
+        border-radius: 20px;
+        padding: 25px;
+        margin-bottom: 20px;
+        box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+        border: 1px solid rgba(255, 255, 255, 0.2);
+      }
+
+      .card h3 {
+        color: #4a5568;
+        margin-bottom: 20px;
+        font-size: 1.3rem;
+        display: flex;
+        align-items: center;
+        gap: 10px;
+      }
+
+      .stats-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+        gap: 20px;
+        margin-bottom: 30px;
+      }
+
+      .stat-card {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+        padding: 20px;
+        border-radius: 15px;
+        text-align: center;
+        box-shadow: 0 8px 25px rgba(0, 0, 0, 0.15);
+      }
+
+      .stat-number {
+        font-size: 2rem;
+        font-weight: bold;
+        margin-bottom: 5px;
+      }
+
+      .stat-label {
+        font-size: 0.9rem;
+        opacity: 0.9;
+      }
+
+      .form-group {
+        margin-bottom: 20px;
+      }
+
+      .form-group label {
+        display: block;
+        margin-bottom: 8px;
+        font-weight: 500;
+        color: #4a5568;
+      }
+
+      .form-control {
+        width: 100%;
+        padding: 12px 15px;
+        border: 2px solid #e2e8f0;
+        border-radius: 10px;
+        font-size: 1rem;
+        transition: border-color 0.3s ease;
+      }
+
+      .form-control:focus {
+        outline: none;
+        border-color: #667eea;
+        box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+      }
+
+      .btn {
+        padding: 12px 24px;
+        border: none;
+        border-radius: 10px;
+        font-size: 1rem;
+        font-weight: 500;
+        cursor: pointer;
+        transition: all 0.3s ease;
+        text-decoration: none;
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+      }
+
+      .btn-primary {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+      }
+
+      .btn-primary:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 8px 25px rgba(102, 126, 234, 0.3);
+      }
+
+      .btn-danger {
+        background: linear-gradient(135deg, #ff6b6b 0%, #ee5a24 100%);
+        color: white;
+      }
+
+      .btn-success {
+        background: linear-gradient(135deg, #51cf66 0%, #40c057 100%);
+        color: white;
+      }
+
+      .table {
+        width: 100%;
+        border-collapse: collapse;
+        margin-top: 20px;
+      }
+
+      .table th,
+      .table td {
+        padding: 12px 15px;
+        text-align: left;
+        border-bottom: 1px solid #e2e8f0;
+      }
+
+      .table th {
+        background: #f8fafc;
+        font-weight: 600;
+        color: #4a5568;
+      }
+
+      .table tr:hover {
+        background: #f8fafc;
+      }
+
+      .badge {
+        padding: 4px 12px;
+        border-radius: 20px;
+        font-size: 0.8rem;
+        font-weight: 500;
+      }
+
+      .badge-success {
+        background: #d4edda;
+        color: #155724;
+      }
+
+      .badge-danger {
+        background: #f8d7da;
+        color: #721c24;
+      }
+
+      .badge-warning {
+        background: #fff3cd;
+        color: #856404;
+      }
+
+      .actions {
+        display: flex;
+        gap: 10px;
+        flex-wrap: wrap;
+      }
+
+      .loading {
+        text-align: center;
+        padding: 40px;
+        color: #6c757d;
+      }
+
+      .alert {
+        padding: 15px 20px;
+        border-radius: 10px;
+        margin-bottom: 20px;
+        border: 1px solid transparent;
+      }
+
+      .alert-success {
+        background: #d4edda;
+        border-color: #c3e6cb;
+        color: #155724;
+      }
+
+      .alert-danger {
+        background: #f8d7da;
+        border-color: #f5c6cb;
+        color: #721c24;
+      }
+
+      .modal {
+        display: none;
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background: rgba(0, 0, 0, 0.5);
+        z-index: 1000;
+      }
+
+      .modal-content {
+        position: absolute;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+        background: white;
+        padding: 30px;
+        border-radius: 20px;
+        max-width: 500px;
+        width: 90%;
+        max-height: 80vh;
+        overflow-y: auto;
+      }
+
+      .close {
+        position: absolute;
+        top: 15px;
+        right: 20px;
+        font-size: 1.5rem;
+        cursor: pointer;
+        color: #6c757d;
+      }
+
+      @media (max-width: 768px) {
+        .container {
+          padding: 10px;
+        }
+
+        .nav-tabs {
+          flex-direction: column;
+        }
+
+        .stats-grid {
+          grid-template-columns: 1fr;
+        }
+
+        .actions {
+          flex-direction: column;
+        }
+
+        .table {
+          font-size: 0.9rem;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <div class="container">
+      <div class="header">
+        <h1><i class="fas fa-cogs"></i> YOLO 系統管理</h1>
+        <p>管理員控制面板 - Phase B 功能</p>
+      </div>
+
+      <div class="nav-tabs">
+        <button class="nav-tab active" onclick="showTab('dashboard')">
+          <i class="fas fa-tachometer-alt"></i> 儀表板
+        </button>
+        <button class="nav-tab" onclick="showTab('users')">
+          <i class="fas fa-users"></i> 用戶管理
+        </button>
+        <button class="nav-tab" onclick="showTab('cameras')">
+          <i class="fas fa-video"></i> 攝影機管理
+        </button>
+        <button class="nav-tab" onclick="showTab('export')">
+          <i class="fas fa-download"></i> 數據匯出
+        </button>
+      </div>
+
+      <!-- 儀表板 -->
+      <div id="dashboard" class="tab-content active">
+        <div class="stats-grid" id="statsGrid">
+          <div class="stat-card">
+            <div class="stat-number" id="totalUsers">-</div>
+            <div class="stat-label">總用戶數</div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-number" id="activeUsers">-</div>
+            <div class="stat-label">活躍用戶</div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-number" id="totalCameras">-</div>
+            <div class="stat-label">總攝影機數</div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-number" id="onlineCameras">-</div>
+            <div class="stat-label">在線攝影機</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- 用戶管理 -->
+      <div id="users" class="tab-content">
+        <div class="card">
+          <h3><i class="fas fa-user-plus"></i> 新增用戶</h3>
+          <form id="userForm">
+            <div class="form-group">
+              <label for="username">用戶名</label>
+              <input type="text" id="username" class="form-control" required />
+            </div>
+            <div class="form-group">
+              <label for="password">密碼</label>
+              <input
+                type="password"
+                id="password"
+                class="form-control"
+                required
+              />
+            </div>
+            <div class="form-group">
+              <label for="role">角色</label>
+              <select id="role" class="form-control">
+                <option value="viewer">Viewer</option>
+                <option value="operator">Operator</option>
+                <option value="admin">Admin</option>
+              </select>
+            </div>
+            <button type="submit" class="btn btn-primary">
+              <i class="fas fa-plus"></i> 創建用戶
+            </button>
+          </form>
+        </div>
+
+        <div class="card">
+          <h3><i class="fas fa-list"></i> 用戶列表</h3>
+          <div id="usersTable">
+            <div class="loading">載入中...</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- 攝影機管理 -->
+      <div id="cameras" class="tab-content">
+        <div class="card">
+          <h3><i class="fas fa-camera-retro"></i> 新增攝影機</h3>
+          <form id="cameraForm">
+            <div class="form-group">
+              <label for="cameraSlug">標識符 (Slug)</label>
+              <input
+                type="text"
+                id="cameraSlug"
+                class="form-control"
+                required
+              />
+            </div>
+            <div class="form-group">
+              <label for="cameraName">名稱</label>
+              <input
+                type="text"
+                id="cameraName"
+                class="form-control"
+                required
+              />
+            </div>
+            <div class="form-group">
+              <label for="sourceUrl">串流地址</label>
+              <input type="url" id="sourceUrl" class="form-control" required />
+            </div>
+            <div class="form-group">
+              <label for="protocol">協議</label>
+              <select id="protocol" class="form-control">
+                <option value="rtsp">RTSP</option>
+                <option value="mjpeg">MJPEG</option>
+                <option value="file">File</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label for="description">描述</label>
+              <textarea
+                id="description"
+                class="form-control"
+                rows="3"
+              ></textarea>
+            </div>
+            <button type="submit" class="btn btn-primary">
+              <i class="fas fa-plus"></i> 創建攝影機
+            </button>
+          </form>
+        </div>
+
+        <div class="card">
+          <h3><i class="fas fa-list"></i> 攝影機列表</h3>
+          <div id="camerasTable">
+            <div class="loading">載入中...</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- 數據匯出 -->
+      <div id="export" class="tab-content">
+        <div class="card">
+          <h3><i class="fas fa-file-export"></i> 匯出數據</h3>
+          <div class="form-group">
+            <label for="exportHours">匯出時間範圍（小時）</label>
+            <select id="exportHours" class="form-control">
+              <option value="1">最近 1 小時</option>
+              <option value="6">最近 6 小時</option>
+              <option value="24" selected>最近 24 小時</option>
+              <option value="72">最近 3 天</option>
+              <option value="168">最近 7 天</option>
+            </select>
+          </div>
+          <div class="actions">
+            <button onclick="exportData('csv')" class="btn btn-primary">
+              <i class="fas fa-file-csv"></i> 匯出 CSV
+            </button>
+            <button onclick="exportData('xlsx')" class="btn btn-success">
+              <i class="fas fa-file-excel"></i> 匯出 Excel
+            </button>
+            <button onclick="exportCameras()" class="btn btn-primary">
+              <i class="fas fa-camera"></i> 匯出攝影機列表
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <script>
+      // 全局變數
+      let accessToken = localStorage.getItem("access_token");
+
+      // 檢查認證
+      if (!accessToken) {
+        window.location.href = "/login.html";
+      }
+
+      // API 請求頭
+      const getHeaders = () => ({
+        Authorization: `Bearer ${accessToken}`,
+        "Content-Type": "application/json",
+      });
+
+      // 顯示標籤頁
+      function showTab(tabName) {
+        // 隱藏所有標籤頁
+        document.querySelectorAll(".tab-content").forEach((tab) => {
+          tab.classList.remove("active");
+        });
+        document.querySelectorAll(".nav-tab").forEach((tab) => {
+          tab.classList.remove("active");
+        });
+
+        // 顯示選中的標籤頁
+        document.getElementById(tabName).classList.add("active");
+        event.target.classList.add("active");
+
+        // 載入對應數據
+        if (tabName === "dashboard") loadDashboard();
+        if (tabName === "users") loadUsers();
+        if (tabName === "cameras") loadCameras();
+      }
+
+      // 載入儀表板數據
+      async function loadDashboard() {
+        try {
+          const response = await fetch("/api/v1/admin/stats", {
+            headers: getHeaders(),
+          });
+
+          if (response.ok) {
+            const data = await response.json();
+            document.getElementById("totalUsers").textContent =
+              data.users.total;
+            document.getElementById("activeUsers").textContent =
+              data.users.active;
+            document.getElementById("totalCameras").textContent =
+              data.cameras.total;
+            document.getElementById("onlineCameras").textContent =
+              data.cameras.online;
+          }
+        } catch (error) {
+          console.error("載入儀表板數據失敗:", error);
+        }
+      }
+
+      // 載入用戶列表
+      async function loadUsers() {
+        try {
+          const response = await fetch("/api/v1/admin/users", {
+            headers: getHeaders(),
+          });
+
+          if (response.ok) {
+            const data = await response.json();
+            renderUsersTable(data.users);
+          }
+        } catch (error) {
+          console.error("載入用戶列表失敗:", error);
+          document.getElementById("usersTable").innerHTML =
+            '<div class="alert alert-danger">載入失敗</div>';
+        }
+      }
+
+      // 渲染用戶表格
+      function renderUsersTable(users) {
+        const html = `
+                <table class="table">
+                    <thead>
+                        <tr>
+                            <th>用戶名</th>
+                            <th>角色</th>
+                            <th>狀態</th>
+                            <th>創建時間</th>
+                            <th>操作</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        ${users
+                          .map(
+                            (user) => `
+                            <tr>
+                                <td>${user.username}</td>
+                                <td><span class="badge badge-primary">${
+                                  user.role
+                                }</span></td>
+                                <td><span class="badge ${
+                                  user.is_active
+                                    ? "badge-success"
+                                    : "badge-danger"
+                                }">${
+                              user.is_active ? "活躍" : "停用"
+                            }</span></td>
+                                <td>${new Date(
+                                  user.created_at
+                                ).toLocaleString()}</td>
+                                <td>
+                                    <button onclick="deleteUser('${
+                                      user.username
+                                    }')" class="btn btn-danger btn-sm">
+                                        <i class="fas fa-trash"></i> 刪除
+                                    </button>
+                                </td>
+                            </tr>
+                        `
+                          )
+                          .join("")}
+                    </tbody>
+                </table>
+            `;
+        document.getElementById("usersTable").innerHTML = html;
+      }
+
+      // 載入攝影機列表
+      async function loadCameras() {
+        try {
+          const response = await fetch("/api/v1/admin/cameras", {
+            headers: getHeaders(),
+          });
+
+          if (response.ok) {
+            const data = await response.json();
+            renderCamerasTable(data.cameras);
+          }
+        } catch (error) {
+          console.error("載入攝影機列表失敗:", error);
+          document.getElementById("camerasTable").innerHTML =
+            '<div class="alert alert-danger">載入失敗</div>';
+        }
+      }
+
+      // 渲染攝影機表格
+      function renderCamerasTable(cameras) {
+        const html = `
+                <table class="table">
+                    <thead>
+                        <tr>
+                            <th>標識符</th>
+                            <th>名稱</th>
+                            <th>協議</th>
+                            <th>狀態</th>
+                            <th>連接狀態</th>
+                            <th>操作</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        ${cameras
+                          .map(
+                            (camera) => `
+                            <tr>
+                                <td>${camera.slug}</td>
+                                <td>${camera.name}</td>
+                                <td><span class="badge badge-primary">${camera.protocol.toUpperCase()}</span></td>
+                                <td><span class="badge ${
+                                  camera.enabled
+                                    ? "badge-success"
+                                    : "badge-danger"
+                                }">${
+                              camera.enabled ? "啟用" : "停用"
+                            }</span></td>
+                                <td><span class="badge ${
+                                  camera.is_online
+                                    ? "badge-success"
+                                    : "badge-warning"
+                                }">${
+                              camera.is_online ? "在線" : "離線"
+                            }</span></td>
+                                <td>
+                                    <button onclick="testCamera('${
+                                      camera.slug
+                                    }')" class="btn btn-primary btn-sm">
+                                        <i class="fas fa-plug"></i> 測試
+                                    </button>
+                                    <button onclick="deleteCamera('${
+                                      camera.slug
+                                    }')" class="btn btn-danger btn-sm">
+                                        <i class="fas fa-trash"></i> 刪除
+                                    </button>
+                                </td>
+                            </tr>
+                        `
+                          )
+                          .join("")}
+                    </tbody>
+                </table>
+            `;
+        document.getElementById("camerasTable").innerHTML = html;
+      }
+
+      // 創建用戶
+      document
+        .getElementById("userForm")
+        .addEventListener("submit", async (e) => {
+          e.preventDefault();
+
+          const userData = {
+            username: document.getElementById("username").value,
+            password: document.getElementById("password").value,
+            role: document.getElementById("role").value,
+          };
+
+          try {
+            const response = await fetch("/api/v1/admin/users", {
+              method: "POST",
+              headers: getHeaders(),
+              body: JSON.stringify(userData),
+            });
+
+            if (response.ok) {
+              alert("用戶創建成功");
+              document.getElementById("userForm").reset();
+              loadUsers();
+            } else {
+              const error = await response.json();
+              alert("創建失敗: " + error.detail);
+            }
+          } catch (error) {
+            alert("創建失敗: " + error.message);
+          }
+        });
+
+      // 創建攝影機
+      document
+        .getElementById("cameraForm")
+        .addEventListener("submit", async (e) => {
+          e.preventDefault();
+
+          const cameraData = {
+            slug: document.getElementById("cameraSlug").value,
+            name: document.getElementById("cameraName").value,
+            source_url: document.getElementById("sourceUrl").value,
+            protocol: document.getElementById("protocol").value,
+            description: document.getElementById("description").value,
+          };
+
+          try {
+            const response = await fetch("/api/v1/admin/cameras", {
+              method: "POST",
+              headers: getHeaders(),
+              body: JSON.stringify(cameraData),
+            });
+
+            if (response.ok) {
+              alert("攝影機創建成功");
+              document.getElementById("cameraForm").reset();
+              loadCameras();
+            } else {
+              const error = await response.json();
+              alert("創建失敗: " + error.detail);
+            }
+          } catch (error) {
+            alert("創建失敗: " + error.message);
+          }
+        });
+
+      // 刪除用戶
+      async function deleteUser(username) {
+        if (!confirm(`確定要刪除用戶 ${username} 嗎？`)) return;
+
+        try {
+          const response = await fetch(`/api/v1/admin/users/${username}`, {
+            method: "DELETE",
+            headers: getHeaders(),
+          });
+
+          if (response.ok) {
+            alert("用戶刪除成功");
+            loadUsers();
+          } else {
+            const error = await response.json();
+            alert("刪除失敗: " + error.detail);
+          }
+        } catch (error) {
+          alert("刪除失敗: " + error.message);
+        }
+      }
+
+      // 刪除攝影機
+      async function deleteCamera(slug) {
+        if (!confirm(`確定要刪除攝影機 ${slug} 嗎？`)) return;
+
+        try {
+          const response = await fetch(`/api/v1/admin/cameras/${slug}`, {
+            method: "DELETE",
+            headers: getHeaders(),
+          });
+
+          if (response.ok) {
+            alert("攝影機刪除成功");
+            loadCameras();
+          } else {
+            const error = await response.json();
+            alert("刪除失敗: " + error.detail);
+          }
+        } catch (error) {
+          alert("刪除失敗: " + error.message);
+        }
+      }
+
+      // 測試攝影機
+      async function testCamera(slug) {
+        try {
+          const response = await fetch(`/api/v1/admin/cameras/${slug}/test`, {
+            method: "POST",
+            headers: getHeaders(),
+          });
+
+          if (response.ok) {
+            const result = await response.json();
+            alert(
+              `測試結果: ${result.test_result.success ? "成功" : "失敗"}\n${
+                result.test_result.message
+              }`
+            );
+            loadCameras();
+          } else {
+            const error = await response.json();
+            alert("測試失敗: " + error.detail);
+          }
+        } catch (error) {
+          alert("測試失敗: " + error.message);
+        }
+      }
+
+      // 匯出數據
+      async function exportData(format) {
+        const hours = document.getElementById("exportHours").value;
+        const url = `/export/metrics.${format}?hours=${hours}`;
+
+        try {
+          const response = await fetch(url, {
+            headers: getHeaders(),
+          });
+
+          if (response.ok) {
+            const blob = await response.blob();
+            const downloadUrl = window.URL.createObjectURL(blob);
+            const a = document.createElement("a");
+            a.href = downloadUrl;
+            a.download = `yolo_metrics_${new Date()
+              .toISOString()
+              .slice(0, 10)}.${format}`;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            window.URL.revokeObjectURL(downloadUrl);
+          } else {
+            alert("匯出失敗");
+          }
+        } catch (error) {
+          alert("匯出失敗: " + error.message);
+        }
+      }
+
+      // 匯出攝影機列表
+      async function exportCameras() {
+        try {
+          const response = await fetch("/export/cameras.csv", {
+            headers: getHeaders(),
+          });
+
+          if (response.ok) {
+            const blob = await response.blob();
+            const downloadUrl = window.URL.createObjectURL(blob);
+            const a = document.createElement("a");
+            a.href = downloadUrl;
+            a.download = `yolo_cameras_${new Date()
+              .toISOString()
+              .slice(0, 10)}.csv`;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            window.URL.revokeObjectURL(downloadUrl);
+          } else {
+            alert("匯出失敗");
+          }
+        } catch (error) {
+          alert("匯出失敗: " + error.message);
+        }
+      }
+
+      // 初始化
+      document.addEventListener("DOMContentLoaded", () => {
+        loadDashboard();
+      });
+    </script>
+  </body>
+</html>

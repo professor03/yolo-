@@ -105,7 +105,7 @@ python -m pytest tests/test_public_release.py tests/test_learnsight.py tests/tes
 
 CI 使用 `requirements-smoke.txt` 執行相同測試，不下載模型、不連攝影機。涵蓋真實登入、受保護 API、無資料回應、人物同步、時段結束、幾何與校正。歷史測試未全部遷移，綠色 CI 不代表整份原型完成生產驗證。
 
-最新發布檢查：乾淨環境公開測試 **23 項通過**；本機 yolov8n / CPU
+最新發布檢查：乾淨環境公開測試 **25 項通過**；本機 yolov8n / CPU
 試跑處理 **21 個影格、約 3.48 FPS**。完整環境、指令及限制見
 [發布驗證](docs/release-validation.md)。目前適用本機展示，LearnSight
 時段持久化、多使用者隔離與進階串流授權仍待完成。

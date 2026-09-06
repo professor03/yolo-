@@ -1,0 +1,165 @@
+# YOLO 人流偵測系統 - 多攝影機配置範例
+# 適用於多攝影機同時監控的場景
+
+# === 基本設定 ===
+model: "yolov8m.pt"
+device: ""  # 自動偵測
+conf: 0.25
+iou: 0.7
+imgsz: 640
+max_det: 1000
+
+# === 性能優化 ===
+use_fp16: true   # 多攝影機建議啟用FP16
+batch_size: 1    # 多攝影機建議使用批處理
+num_workers: 8   # 增加工作線程
+pin_memory: true
+queue_size: 20   # 增加佇列大小
+drop_frame_policy: "drop_oldest"
+max_queue_wait: 0.05
+enable_queue_monitoring: true
+
+# === 追蹤設定 ===
+track: true
+tracker: "bytetrack.yaml"
+persist: true
+
+# === 顯示與輸出 ===
+show: false      # 多攝影機建議關閉顯示
+save: true       # 保存結果
+outdir: "runs/multi_cam_detect"
+
+# === 異常檢測 ===
+stay_threshold: 15.0  # 多攝影機場景增加停留時間
+crowd_threshold: 8    # 增加擁擠閾值
+
+# === 重連設定 ===
+reconnect_attempts: 10  # 多攝影機增加重連次數
+reconnect_delay: 3.0
+reconnect_backoff: 2.0
+
+# === 佇列配置 ===
+queue_size: 20
+drop_frame_policy: "drop_oldest"
+max_queue_wait: 0.05
+enable_queue_monitoring: true
+
+# === 監控設定 ===
+monitor_interval: 3.0  # 縮短監控間隔
+log_level: "INFO"
+log_file: "multi_cam_detection.log"
+
+# === 多攝影機配置 ===
+cameras:
+  - id: "cam1"
+    name: "入口監控"
+    source: "rtsp://camera.example.invalid/stream"
+    enabled: true
+    lines:
+      - id: "entrance_line"
+        points: [[100, 300], [500, 300]]
+        direction: "both"
+        uturn_cooldown: 30
+        jitter_frames: 3
+    zones:
+      - id: "entrance_zone"
+        points: [[50, 200], [550, 200], [550, 400], [50, 400]]
+        max_occupancy: 15
+    ignore_zones:
+      - id: "entrance_ignore"
+        points: [[0, 0], [100, 0], [100, 100], [0, 100]]
+    
+  - id: "cam2"
+    name: "出口監控"
+    source: "rtsp://camera.example.invalid/stream"
+    enabled: true
+    lines:
+      - id: "exit_line"
+        points: [[150, 250], [450, 250]]
+        direction: "both"
+        uturn_cooldown: 30
+        jitter_frames: 3
+    zones:
+      - id: "exit_zone"
+        points: [[100, 150], [500, 150], [500, 350], [100, 350]]
+        max_occupancy: 12
+    ignore_zones:
+      - id: "exit_ignore"
+        points: [[500, 0], [600, 0], [600, 100], [500, 100]]
+    
+  - id: "cam3"
+    name: "大廳監控"
+    source: "rtsp://camera.example.invalid/stream"
+    enabled: true
+    lines:
+      - id: "main_hall_line1"
+        points: [[200, 200], [400, 200]]
+        direction: "both"
+        uturn_cooldown: 45
+        jitter_frames: 4
+      - id: "main_hall_line2"
+        points: [[200, 400], [400, 400]]
+        direction: "both"
+        uturn_cooldown: 45
+        jitter_frames: 4
+    zones:
+      - id: "main_hall_zone"
+        points: [[150, 150], [450, 150], [450, 450], [150, 450]]
+        max_occupancy: 25
+    ignore_zones:
+      - id: "main_hall_ignore1"
+        points: [[0, 0], [150, 0], [150, 150], [0, 150]]
+      - id: "main_hall_ignore2"
+        points: [[450, 0], [600, 0], [600, 150], [450, 150]]
+
+# === 全域線段配置 ===
+lines: []
+
+# === 全域區域配置 ===
+zones: []
+
+# === 全域忽略區域配置 ===
+ignore_zones: []
+
+# === 標定配置 ===
+calibration:
+  enabled: false
+  src_points: []
+  dst_points: []
+
+# === 計數器配置 ===
+counter:
+  cooldown_frames: 30
+  max_gap_frames: 20    # 多攝影機增加容錯
+  max_relink_dist: 50.0 # 增加重連距離
+  history_size: 50      # 增加歷史記錄
+
+# === API服務配置 ===
+server:
+  enabled: true
+  host: "0.0.0.0"
+  port: 8000
+  cors_origins: ["http://localhost:3000", "http://localhost:8080"]
+
+# === 認證配置 ===
+auth:
+  enabled: true
+  jwt_secret: "" # Historical example only; main API reads JWT_SECRET from the environment.
+  jwt_expire_minutes: 60
+  admin_username: "admin"
+  admin_password: "" # Create accounts interactively; no default password.
+
+# === 監控配置 ===
+monitoring:
+  prometheus_enabled: true
+  prometheus_port: 9090
+  grafana_enabled: true
+  grafana_port: 3001
+
+# === 多攝影機特定配置 ===
+multi_camera:
+  sync_tolerance: 0.1      # 攝影機同步容忍度（秒）
+  cross_camera_tracking: true  # 跨攝影機追蹤
+  global_counting: true    # 全域計數
+  load_balancing: true     # 負載均衡
+  failover_enabled: true   # 故障轉移

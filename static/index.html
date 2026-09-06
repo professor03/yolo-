@@ -1,0 +1,2888 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>YOLO 人流偵測 - 儀表板</title>
+    <link
+      href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css"
+      rel="stylesheet"
+    />
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="rtsp://camera.example.invalid/stream"></script>
+    <style>
+      * {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+      }
+
+      body {
+        font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+        background: linear-gradient(135deg, #1e3c72 0%, #2a5298 100%);
+        min-height: 100vh;
+        color: #333;
+      }
+
+      .container {
+        max-width: 1600px;
+        margin: 0 auto;
+        padding: 20px;
+      }
+
+      .header {
+        background: rgba(255, 255, 255, 0.1);
+        backdrop-filter: blur(10px);
+        border-radius: 20px;
+        padding: 30px;
+        margin-bottom: 30px;
+        text-align: center;
+        color: white;
+        box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+      }
+
+      .header h1 {
+        font-size: 3rem;
+        margin-bottom: 10px;
+        text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.3);
+      }
+
+      .user-info {
+        position: absolute;
+        top: 20px;
+        right: 20px;
+        color: white;
+        font-size: 0.9rem;
+      }
+
+      .role-badge {
+        display: inline-block;
+        padding: 4px 12px;
+        border-radius: 20px;
+        font-size: 0.8rem;
+        font-weight: bold;
+        margin-left: 10px;
+      }
+
+      .role-admin {
+        background: #dc2626;
+        color: white;
+      }
+      .role-operator {
+        background: #ea580c;
+        color: white;
+      }
+      .role-viewer {
+        background: #059669;
+        color: white;
+      }
+
+      .dashboard {
+        display: grid;
+        grid-template-columns: 2fr 1fr;
+        gap: 30px;
+        margin-bottom: 30px;
+      }
+
+      .card {
+        background: rgba(255, 255, 255, 0.95);
+        backdrop-filter: blur(10px);
+        border-radius: 20px;
+        padding: 25px;
+        box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+        transition: all 0.3s ease;
+        border: 1px solid rgba(255, 255, 255, 0.2);
+      }
+
+      .card:hover {
+        transform: translateY(-5px);
+        box-shadow: 0 20px 40px rgba(0, 0, 0, 0.15);
+      }
+
+      .card h3 {
+        color: #1e3c72;
+        margin-bottom: 20px;
+        font-size: 1.3rem;
+        display: flex;
+        align-items: center;
+        gap: 10px;
+      }
+
+      .card.hidden {
+        display: none;
+      }
+
+      .metrics-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+        gap: 15px;
+        margin-bottom: 15px;
+      }
+
+      .metric-item {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        padding: 20px;
+        border-radius: 12px;
+        text-align: center;
+        color: white;
+        box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+        transition: transform 0.3s ease, box-shadow 0.3s ease;
+        min-height: 100px;
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+        align-items: center;
+      }
+
+      .metric-item:hover {
+        transform: translateY(-5px);
+        box-shadow: 0 8px 25px rgba(0, 0, 0, 0.15);
+      }
+
+      .metric-value {
+        font-size: 2.5rem;
+        font-weight: bold;
+        margin-bottom: 8px;
+        text-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
+      }
+
+      .metric-label {
+        font-size: 0.9rem;
+        opacity: 0.9;
+        font-weight: 500;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+      }
+
+      .btn {
+        padding: 12px 24px;
+        border: none;
+        border-radius: 25px;
+        cursor: pointer;
+        font-weight: 600;
+        transition: all 0.3s ease;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        margin: 5px;
+      }
+
+      .btn-primary {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+      }
+      .btn-danger {
+        background: linear-gradient(135deg, #f87171 0%, #ef4444 100%);
+        color: white;
+      }
+      .btn-secondary {
+        background: linear-gradient(135deg, #a5b4fc 0%, #818cf8 100%);
+        color: white;
+      }
+      .btn-ghost {
+        background: #f3f4f6;
+        color: #1f2937;
+      }
+
+      .btn:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
+      }
+      .btn:disabled {
+        opacity: 0.5;
+        cursor: not-allowed;
+        transform: none;
+      }
+
+      .video-container {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+        gap: 20px;
+        align-items: stretch;
+      }
+
+      .control-bar {
+        display: flex;
+        gap: 15px;
+        margin-bottom: 20px;
+        flex-wrap: wrap;
+        align-items: center;
+      }
+
+      .control-bar .btn {
+        min-width: 140px;
+      }
+
+      .video-player,
+      .video-feed {
+        width: 100%;
+        height: 100%;
+        aspect-ratio: 16 / 9;
+        border-radius: 12px;
+        background: #000;
+        object-fit: cover;
+        display: block;
+        flex: 1 1 auto;
+      }
+
+      .video-card {
+        display: flex;
+        flex-direction: column;
+        gap: 8px;
+        background: rgba(0, 0, 0, 0.65);
+        border-radius: 12px;
+        padding: 12px;
+        box-shadow: 0 10px 30px rgba(0, 0, 0, 0.25);
+        height: 100%;
+        min-height: 0;
+        overflow: hidden;
+      }
+
+      .video-card-media {
+        position: relative;
+        display: flex;
+        width: 100%;
+        flex: 1 1 auto;
+        min-height: 300px;
+        overflow: hidden;
+        border-radius: 12px;
+        background: #0f172a;
+      }
+
+      .camera-card-controls {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        gap: 10px;
+        margin-top: 8px;
+        color: #e2e8f0;
+        font-size: 0.85rem;
+      }
+
+      .camera-view-label {
+        flex: 1;
+        text-align: left;
+        opacity: 0.85;
+      }
+
+      .latency-toggle {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        background: rgba(59, 130, 246, 0.15);
+        border: 1px solid rgba(59, 130, 246, 0.35);
+        color: #dbeafe;
+        padding: 6px 12px;
+        border-radius: 6px;
+        cursor: pointer;
+        transition: background 0.2s ease, border-color 0.2s ease;
+        font-size: 0.85rem;
+        font-weight: 600;
+      }
+
+      .latency-toggle:hover:not(:disabled) {
+        background: rgba(59, 130, 246, 0.25);
+        border-color: rgba(59, 130, 246, 0.5);
+      }
+
+      .latency-toggle:disabled {
+        opacity: 0.6;
+        cursor: not-allowed;
+        background: rgba(71, 85, 105, 0.35);
+        border-color: rgba(148, 163, 184, 0.4);
+        color: #94a3b8;
+      }
+
+      .video-card-offline {
+        border: 1px solid rgba(239, 68, 68, 0.35);
+        box-shadow: 0 0 0 1px rgba(239, 68, 68, 0.2);
+      }
+
+      .video-card-title {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        color: #f1f5f9;
+        font-weight: 600;
+      }
+
+      .video-feed-error {
+        opacity: 0.3;
+        filter: grayscale(1);
+      }
+
+      .video-feed-loading {
+        filter: blur(8px);
+      }
+
+      .camera-feed-empty {
+        grid-column: 1 / -1;
+        padding: 20px;
+        border-radius: 8px;
+        background: #111827;
+        color: #9ca3af;
+        text-align: center;
+      }
+
+      details {
+        width: 100%;
+      }
+
+      details summary {
+        cursor: pointer;
+        list-style: none;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        font-weight: 600;
+        color: #1e3c72;
+        font-size: 1.05rem;
+      }
+
+      details summary::-webkit-details-marker {
+        display: none;
+      }
+
+      details summary i {
+        color: #4f46e5;
+      }
+
+      .performance-content {
+        display: flex;
+        flex-direction: column;
+        gap: 20px;
+        margin-top: 18px;
+      }
+
+      .chart-wrapper {
+        position: relative;
+        height: 280px;
+      }
+
+      .camera-metrics-container {
+        display: grid;
+        gap: 16px;
+        grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      }
+
+      .camera-metric-card {
+        background: #f8fafc;
+        border-radius: 12px;
+        border: 1px solid rgba(226, 232, 240, 0.9);
+        box-shadow: 0 6px 18px rgba(15, 23, 42, 0.08);
+        padding: 16px;
+      }
+
+      .camera-metric-title {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        font-size: 0.85rem;
+        text-transform: uppercase;
+        letter-spacing: 0.08em;
+        font-weight: 600;
+        color: #1f2937;
+        margin-bottom: 12px;
+      }
+
+      .camera-metric-title i {
+        color: #6366f1;
+      }
+
+      .camera-metric-grid {
+        display: grid;
+        gap: 12px;
+        grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+      }
+
+      .camera-metric-item {
+        background: white;
+        border-radius: 10px;
+        padding: 12px;
+        text-align: center;
+        border: 1px solid rgba(209, 213, 219, 0.7);
+        box-shadow: 0 4px 12px rgba(148, 163, 184, 0.15);
+      }
+
+      .camera-metric-value {
+        font-size: 1.35rem;
+        font-weight: 600;
+        color: #1d4ed8;
+      }
+
+      .camera-metric-label {
+        margin-top: 6px;
+        font-size: 0.75rem;
+        text-transform: uppercase;
+        letter-spacing: 0.04em;
+        color: #6b7280;
+      }
+
+      .camera-metrics-empty {
+        text-align: center;
+        color: #6b7280;
+        font-size: 0.9rem;
+        padding: 14px;
+        background: #f3f4f6;
+        border-radius: 10px;
+        border: 1px dashed rgba(148, 163, 184, 0.6);
+      }
+
+      .camera-status {
+        margin-top: 10px;
+        padding: 10px;
+        background: #f3f4f6;
+        border-radius: 6px;
+        font-size: 0.9rem;
+        color: #1f2937;
+      }
+
+      .camera-feed-card {
+        border: 1px solid #dde1e7;
+        border-radius: 10px;
+        padding: 10px;
+        background: white;
+        display: flex;
+        flex-direction: column;
+        gap: 8px;
+      }
+
+      .camera-feed-card header {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 10px;
+      }
+
+      .camera-feed-card header h6 {
+        margin: 0;
+        color: #1f2937;
+        font-size: 0.95rem;
+        font-weight: 600;
+      }
+
+      .camera-feed-card .camera-meta {
+        font-size: 0.75rem;
+        color: #6b7280;
+      }
+
+      .camera-feed-card h6 {
+        margin: 0;
+        color: #1f2937;
+        font-size: 0.95rem;
+      }
+
+      .camera-form {
+        display: flex;
+        flex-direction: column;
+        gap: 12px;
+        margin-top: 16px;
+        background: #f8fafc;
+        border: 1px solid rgba(226, 232, 240, 0.8);
+        padding: 14px;
+        border-radius: 10px;
+      }
+
+      .camera-form label {
+        font-size: 0.85rem;
+        color: #374151;
+        display: flex;
+        flex-direction: column;
+        gap: 6px;
+        font-weight: 600;
+      }
+
+      .camera-form input,
+      .camera-form select {
+        padding: 8px 10px;
+        border-radius: 6px;
+        border: 1px solid #d1d5db;
+        font-size: 0.9rem;
+      }
+
+      .form-row {
+        display: flex;
+        gap: 12px;
+        flex-wrap: wrap;
+      }
+
+      .form-row label {
+        flex: 1 1 160px;
+      }
+
+      .form-row .full-width {
+        flex: 1 1 100%;
+      }
+
+      .form-actions {
+        display: flex;
+        justify-content: flex-end;
+      }
+
+      .camera-form-message {
+        font-size: 0.85rem;
+        display: none;
+      }
+
+      .camera-form-message.error {
+        color: #dc2626;
+      }
+
+      .camera-form-message.success {
+        color: #15803d;
+      }
+
+      .camera-management-list {
+        margin-top: 16px;
+        display: grid;
+        gap: 12px;
+      }
+
+      .camera-management-empty {
+        padding: 12px;
+        border-radius: 8px;
+        background: #f3f4f6;
+        color: #4b5563;
+        font-size: 0.85rem;
+      }
+
+      .camera-management-card {
+        border: 1px solid rgba(209, 213, 219, 0.9);
+        border-radius: 10px;
+        padding: 12px;
+        background: white;
+        display: flex;
+        flex-direction: column;
+        gap: 8px;
+      }
+
+      .camera-management-card header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        font-weight: 600;
+        color: #1f2937;
+      }
+
+      .camera-management-card .camera-actions {
+        display: flex;
+        gap: 8px;
+        flex-wrap: wrap;
+      }
+
+      .camera-management-card .camera-meta {
+        font-size: 0.8rem;
+        color: #6b7280;
+        display: flex;
+        flex-direction: column;
+        gap: 4px;
+      }
+
+      .badge {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        padding: 2px 10px;
+        border-radius: 9999px;
+        font-size: 0.7rem;
+        font-weight: 600;
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
+      }
+
+      .badge-success {
+        background: #dcfce7;
+        color: #15803d;
+      }
+
+      .badge-danger {
+        background: #fee2e2;
+        color: #b91c1c;
+      }
+
+      .badge-warning {
+        background: #fef3c7;
+        color: #b45309;
+      }
+
+      .system-status-alert {
+        margin-top: 6px;
+        padding: 6px 10px;
+        border-radius: 6px;
+        background: #fef3c7;
+        color: #b45309;
+        font-size: 0.85rem;
+      }
+
+      .system-status-ok {
+        margin-top: 6px;
+        padding: 6px 10px;
+        border-radius: 6px;
+        background: #dcfce7;
+        color: #15803d;
+        font-size: 0.85rem;
+      }
+
+      .system-status-actions {
+        display: flex;
+        gap: 8px;
+        margin-top: 12px;
+        flex-wrap: wrap;
+      }
+
+      .loading {
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        height: 200px;
+        font-size: 1.2rem;
+        color: #666;
+      }
+
+      .spinner {
+        width: 40px;
+        height: 40px;
+        border: 4px solid #f3f3f3;
+        border-top: 4px solid #667eea;
+        border-radius: 50%;
+        animation: spin 1s linear infinite;
+        margin-right: 15px;
+      }
+
+      @keyframes spin {
+        0% {
+          transform: rotate(0deg);
+        }
+        100% {
+          transform: rotate(360deg);
+        }
+      }
+
+      @media (max-width: 1200px) {
+        .dashboard {
+          grid-template-columns: 1fr;
+        }
+        .video-container {
+          grid-template-columns: 1fr;
+          gap: 20px;
+        }
+      }
+      @media (max-width: 900px) {
+        .video-container {
+          grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+        }
+      }
+
+      @media (max-width: 600px) {
+        .video-container {
+          grid-template-columns: 1fr;
+        }
+      }
+
+      @media (max-width: 768px) {
+        .header {
+          padding: 20px;
+        }
+        .header h1 {
+          font-size: 2rem;
+        }
+        .user-info {
+          position: static;
+          margin-top: 12px;
+          display: flex;
+          justify-content: center;
+          align-items: center;
+          gap: 10px;
+          flex-wrap: wrap;
+        }
+        .user-info button {
+          margin-top: 8px;
+        }
+        .control-bar {
+          flex-direction: column;
+          align-items: stretch;
+        }
+        .control-bar .btn {
+          width: 100%;
+        }
+        .metrics-grid {
+          grid-template-columns: repeat(2, 1fr);
+          gap: 10px;
+        }
+        .video-container {
+          grid-template-columns: 1fr;
+          gap: 15px;
+        }
+        .video-feed {
+          height: 300px;
+        }
+        .metric-item {
+          min-height: 80px;
+          padding: 15px;
+        }
+        .metric-value {
+          font-size: 2rem;
+        }
+        .metric-label {
+          font-size: 0.8rem;
+        }
+      }
+      @media (max-width: 480px) {
+        .metrics-grid {
+          grid-template-columns: 1fr;
+          gap: 8px;
+        }
+        .metric-item {
+          min-height: 70px;
+          padding: 12px;
+        }
+        .metric-value {
+          font-size: 1.8rem;
+        }
+        .metric-label {
+          font-size: 0.75rem;
+        }
+        .card {
+          margin: 10px 0;
+          padding: 15px;
+        }
+        .header h1 {
+          font-size: 1.5rem;
+        }
+        .header .user-info {
+          font-size: 0.8rem;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <div class="container">
+      <!-- Header -->
+      <div class="header">
+        <h1><i class="fas fa-video"></i> YOLO 人流偵測系統</h1>
+        <p>角色權限管理儀表板</p>
+        <div
+          id="welcomeMessage"
+          style="margin: 10px 0; font-size: 1.1rem; font-weight: 500"
+        >
+          載入中...
+        </div>
+        <div class="user-info">
+          <span id="userInfo">載入中...</span>
+          <button class="btn btn-danger" onclick="logout()">
+            <i class="fas fa-sign-out-alt"></i> 登出
+          </button>
+        </div>
+      </div>
+
+      <!-- Controls -->
+      <div class="control-bar">
+        <button class="btn btn-primary" onclick="refreshData()">
+          <i class="fas fa-sync-alt"></i> 刷新數據
+        </button>
+        <button
+          class="btn btn-primary"
+          id="startDetectionBtn"
+          onclick="startDetection()"
+        >
+          <i class="fas fa-play"></i> 開始偵測
+        </button>
+        <button
+          class="btn btn-danger"
+          id="stopDetectionBtn"
+          onclick="stopDetection()"
+        >
+          <i class="fas fa-stop"></i> 停止偵測
+        </button>
+      </div>
+
+      <!-- Main Dashboard -->
+      <div class="dashboard">
+        <!-- Main Content -->
+        <div>
+          <!-- Video Feed -->
+          <div class="card">
+            <h3><i class="fas fa-video"></i> 即時影像</h3>
+            <div id="cameraFeedContainer" class="video-container"></div>
+            <div id="cameraStatus" class="camera-status">
+              <i class="fas fa-spinner fa-spin"></i> 攝影機狀態: 載入中...
+            </div>
+          </div>
+
+          <!-- Metrics Chart -->
+          <div class="card">
+            <details id="performanceDetails" open>
+              <summary><i class="fas fa-chart-line"></i> 性能指標</summary>
+              <div class="performance-content">
+                <div class="chart-wrapper">
+                  <canvas id="metricsChart"></canvas>
+                </div>
+                <div
+                  id="cameraMetricsContainer"
+                  class="camera-metrics-container"
+                ></div>
+              </div>
+            </details>
+          </div>
+        </div>
+
+        <!-- Sidebar -->
+        <div>
+          <!-- Real-time Metrics -->
+          <div class="card">
+            <details id="overallMetricsPanel" open>
+              <summary><i class="fas fa-tachometer-alt"></i> 即時指標</summary>
+              <div class="metrics-grid">
+                <div class="metric-item" title="即時偵測到的人數">
+                  <div class="metric-value" id="peopleCount">0</div>
+                  <div class="metric-label">偵測人數</div>
+                </div>
+
+                <div class="metric-item" title="每秒處理的影像幀數">
+                  <div class="metric-value" id="fpsProcessing">0</div>
+                  <div class="metric-label">處理 FPS</div>
+                </div>
+
+                <div class="metric-item" title="從影像捕獲到處理完成的延遲時間">
+                  <div class="metric-value" id="latency">0</div>
+                  <div class="metric-label">延遲 (ms)</div>
+                </div>
+
+                <div class="metric-item" title="系統 CPU 使用率">
+                  <div class="metric-value" id="cpuUsage">0</div>
+                  <div class="metric-label">CPU 使用率</div>
+                </div>
+              </div>
+            </details>
+          </div>
+
+          <!-- System Status -->
+          <div class="card">
+            <h3><i class="fas fa-server"></i> 系統狀態</h3>
+            <div id="systemStatus">
+              <div class="loading">
+                <div class="spinner"></div>
+                載入中...
+              </div>
+            </div>
+            <div class="system-status-actions">
+              <button type="button" class="btn btn-secondary" id="exportCsvBtn">
+                <i class="fas fa-file-csv"></i> 匯出 CSV
+              </button>
+              <button
+                type="button"
+                class="btn btn-secondary"
+                id="exportExcelBtn"
+              >
+                <i class="fas fa-file-excel"></i> 匯出 Excel
+              </button>
+            </div>
+          </div>
+
+          <!-- Camera Management -->
+          <div class="card">
+            <details id="cameraManagementPanel" open>
+              <summary><i class="fas fa-tools"></i> 攝影機管理</summary>
+              <form id="cameraCreateForm" class="camera-form">
+                <div class="form-row">
+                  <label>
+                    Slug
+                    <input
+                      type="text"
+                      id="cameraSlug"
+                      required
+                      placeholder="rtsp_camera"
+                    />
+                  </label>
+                  <label>
+                    名稱
+                    <input
+                      type="text"
+                      id="cameraName"
+                      required
+                      placeholder="RTSP 攝影機"
+                    />
+                  </label>
+                </div>
+                <div class="form-row">
+                  <label class="full-width">
+                    串流 URL
+                    <input
+                      type="text"
+                      id="cameraUrl"
+                      required
+                      placeholder="rtsp://... 或 http://..."
+                    />
+                  </label>
+                </div>
+                <div class="form-row">
+                  <label>
+                    類型
+                    <select id="cameraProtocol">
+                      <option value="rtsp">RTSP</option>
+                      <option value="mjpeg">MJPEG</option>
+                      <option value="http">HTTP</option>
+                    </select>
+                  </label>
+                  <label>
+                    啟用
+                    <input type="checkbox" id="cameraEnabled" checked />
+                  </label>
+                </div>
+                <div class="form-row">
+                  <label class="full-width">
+                    備註
+                    <input
+                      type="text"
+                      id="cameraDescription"
+                      placeholder="可留空"
+                    />
+                  </label>
+                </div>
+                <div class="form-actions">
+                  <button type="submit" class="btn btn-primary">
+                    <i class="fas fa-plus"></i> 新增攝影機
+                  </button>
+                </div>
+                <div class="camera-form-message" id="cameraFormMessage"></div>
+              </form>
+              <div
+                id="cameraManagementList"
+                class="camera-management-list"
+              ></div>
+            </details>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <script>
+      // Global variables
+      let metricsChart;
+      let websocket;
+      let currentUser = null;
+      let userRole = null;
+      let metricsPollingTimer = null;
+      let refreshTimer = null;
+      let cameraHealthTimer = null;
+      const AUTH_MESSAGE_KEY = "auth_message";
+      const AUTH_USER_KEY = "current_user";
+      const CAMERA_OFFLINE_THRESHOLD = 15_000; // 15 秒無更新視為離線
+      const CAMERA_POOR_CONNECTION_THRESHOLD = 5_000; // 5 秒無更新視為連接不良
+      const LOW_LATENCY_STORAGE_KEY = "camera_low_latency";
+      let lowLatencyCameras = new Set();
+
+      try {
+        const savedLatency = JSON.parse(
+          localStorage.getItem(LOW_LATENCY_STORAGE_KEY) || "[]"
+        );
+        if (Array.isArray(savedLatency)) {
+          lowLatencyCameras = new Set(savedLatency.filter(Boolean));
+        }
+      } catch (error) {
+        console.warn("Failed to read low latency preferences", error);
+      }
+
+      function persistLowLatencyPreferences() {
+        try {
+          localStorage.setItem(
+            LOW_LATENCY_STORAGE_KEY,
+            JSON.stringify(Array.from(lowLatencyCameras))
+          );
+        } catch (error) {
+          console.warn("Failed to persist low latency preferences", error);
+        }
+      }
+
+      let cameraFormMode = "create";
+      let cameraFormEditingSlug = null;
+      let cameraFormCancelBtn = null;
+      let latestCameras = [];
+      let lastKnownCameraStatus = null;
+
+      let detectionActionPending = false;
+      let detectionState = { active: false, processes: {} };
+
+      function applyDetectionButtonState() {
+        const startBtn = document.getElementById("startDetectionBtn");
+        const stopBtn = document.getElementById("stopDetectionBtn");
+        const canControl = userHasPermission("detection_control");
+        const disableStart =
+          !canControl || detectionActionPending || detectionState.active;
+        const disableStop =
+          !canControl || detectionActionPending || !detectionState.active;
+        if (startBtn) {
+          startBtn.disabled = disableStart;
+          startBtn.style.opacity = disableStart ? "0.6" : "1";
+        }
+        if (stopBtn) {
+          stopBtn.disabled = disableStop;
+          stopBtn.style.opacity = disableStop ? "0.6" : "1";
+        }
+        updateDetectionStatusIndicator();
+      }
+
+      const hlsPlayers = new Map();
+
+      function updateDetectionStatusIndicator() {
+        const indicator = document.getElementById("detectionStatusIndicator");
+        if (!indicator) return;
+        const state = detectionState || {};
+        const active = Boolean(state.active);
+        const processes = state.processes || {};
+        const runningSlugs = Object.entries(processes)
+          .filter(([, status]) => status === "running")
+          .map(([slug]) => slug);
+        indicator.dataset.active = active ? "true" : "false";
+        const summary = active
+          ? runningSlugs.length
+            ? "運行中：" + runningSlugs.join(", ")
+            : "運行中"
+          : "未啟動";
+        indicator.textContent = "偵測狀態：" + summary;
+      }
+
+      function applyDetectionButtonState() {
+        const startBtn = document.getElementById("startDetectionBtn");
+        const stopBtn = document.getElementById("stopDetectionBtn");
+        const canControl = userHasPermission("detection_control");
+        const disabled = !canControl || detectionActionPending;
+        if (startBtn) {
+          startBtn.disabled = disabled;
+          startBtn.style.opacity = disabled ? "0.6" : "1";
+        }
+        if (stopBtn) {
+          stopBtn.disabled = disabled;
+          stopBtn.style.opacity = disabled ? "0.6" : "1";
+        }
+      }
+
+      function destroyHlsPlayer(slug) {
+        if (!slug) return;
+        const entry = hlsPlayers.get(slug);
+        if (!entry) return;
+        try {
+          if (entry.hls) {
+            entry.hls.destroy();
+          }
+        } catch (error) {
+          console.warn(`HLS destroy failed for ${slug}:`, error);
+        }
+        if (entry.video) {
+          try {
+            entry.video.pause();
+            entry.video.removeAttribute("src");
+            entry.video.load();
+          } catch (error) {
+            // ignore video cleanup errors
+          }
+        }
+        hlsPlayers.delete(slug);
+      }
+
+      function cleanupHlsPlayers(activeSlugs) {
+        const iterable = activeSlugs ? Array.from(activeSlugs) : [];
+        const keep = new Set(iterable.filter(Boolean));
+        for (const slug of Array.from(hlsPlayers.keys())) {
+          if (!keep.has(slug)) {
+            destroyHlsPlayer(slug);
+          }
+        }
+      }
+
+      function setupHlsPlayback(slug, videoEl, sourceUrl) {
+        if (!slug || !videoEl || !sourceUrl) {
+          return;
+        }
+
+        let absoluteUrl = sourceUrl;
+        try {
+          absoluteUrl = sourceUrl.startsWith("http")
+            ? sourceUrl
+            : new URL(sourceUrl, window.location.origin).toString();
+        } catch (error) {
+          console.warn(`Invalid HLS URL for ${slug}:`, sourceUrl, error);
+        }
+
+        const existing = hlsPlayers.get(slug);
+        if (
+          existing &&
+          existing.source === absoluteUrl &&
+          existing.video === videoEl
+        ) {
+          if (videoEl.paused) {
+            videoEl.play().catch(() => {});
+          }
+          return;
+        }
+
+        destroyHlsPlayer(slug);
+
+        const supportsNativeHls =
+          typeof videoEl.canPlayType === "function" &&
+          videoEl.canPlayType("application/vnd.apple.mpegurl");
+
+        if (supportsNativeHls) {
+          videoEl.src = absoluteUrl;
+          videoEl.dataset.hlsSource = sourceUrl;
+          videoEl.dataset.hlsAbsoluteSource = absoluteUrl;
+          hlsPlayers.set(slug, {
+            video: videoEl,
+            hls: null,
+            source: absoluteUrl,
+          });
+          videoEl.play().catch(() => {});
+          return;
+        }
+
+        if (window.Hls && window.Hls.isSupported()) {
+          const hls = new Hls({
+            enableWorker: true,
+            lowLatencyMode: true,
+            backBufferLength: 90,
+          });
+          hls.loadSource(absoluteUrl);
+          hls.attachMedia(videoEl);
+          hls.on(Hls.Events.ERROR, (_event, data) => {
+            if (!data || !data.fatal) {
+              return;
+            }
+            switch (data.type) {
+              case Hls.ErrorTypes.NETWORK_ERROR:
+                hls.startLoad();
+                break;
+              case Hls.ErrorTypes.MEDIA_ERROR:
+                hls.recoverMediaError();
+                break;
+              default:
+                destroyHlsPlayer(slug);
+                break;
+            }
+          });
+          hlsPlayers.set(slug, { video: videoEl, hls, source: absoluteUrl });
+          videoEl.dataset.hlsSource = sourceUrl;
+          videoEl.dataset.hlsAbsoluteSource = absoluteUrl;
+          videoEl.play().catch(() => {});
+          return;
+        }
+
+        videoEl.src = absoluteUrl;
+        videoEl.dataset.hlsSource = sourceUrl;
+        videoEl.dataset.hlsAbsoluteSource = absoluteUrl;
+        hlsPlayers.set(slug, {
+          video: videoEl,
+          hls: null,
+          source: absoluteUrl,
+        });
+        videoEl.play().catch(() => {});
+      }
+
+      function removeCameraFeedPlaceholder(container) {
+        const placeholder = container.querySelector(".camera-feed-empty");
+        if (placeholder) {
+          placeholder.remove();
+        }
+      }
+
+      function ensureCameraFeedPlaceholder(container, message) {
+        let placeholder = container.querySelector(".camera-feed-empty");
+        if (!placeholder) {
+          placeholder = document.createElement("p");
+          placeholder.className = "camera-feed-empty";
+          container.appendChild(placeholder);
+        }
+        placeholder.textContent = message;
+      }
+
+      function ensureCardStructure(card) {
+        if (card._refs) {
+          return card._refs;
+        }
+
+        card.classList.add("video-card");
+        card.innerHTML = "";
+
+        const title = document.createElement("div");
+        title.className = "video-card-title";
+
+        const nameSpan = document.createElement("span");
+        const badge = document.createElement("span");
+        badge.className = "badge badge-danger";
+
+        title.append(nameSpan, badge);
+        card.appendChild(title);
+
+        // 移除控制面板，讓影像佔據更多空間
+
+        const mediaWrapper = document.createElement("div");
+        mediaWrapper.className = "video-card-media";
+        card.appendChild(mediaWrapper);
+
+        const warning = document.createElement("div");
+        warning.className = "camera-status camera-status-warning";
+        warning.style.display = "none";
+        card.appendChild(warning);
+
+        card._refs = {
+          name: nameSpan,
+          badge,
+          controls: null,
+          viewLabel: null,
+          viewToggle: null,
+          mediaWrapper,
+          warning,
+          meta: null,
+          video: null,
+          image: null,
+        };
+
+        return card._refs;
+      }
+
+      function createCameraCard(camera) {
+        const card = document.createElement("div");
+        card.dataset.slug = camera?.slug || "";
+        ensureCardStructure(card);
+        return card;
+      }
+
+      function updateCameraCard(card, camera) {
+        const refs = ensureCardStructure(card);
+        const slug = camera?.slug || "";
+        card.dataset.slug = slug;
+
+        const name = camera?.name || slug || "Unnamed camera";
+        refs.name.textContent = name;
+
+        const camLastSeenDate = parseTimestamp(camera?.status?.last_seen);
+        const camLastSeen = camLastSeenDate ? camLastSeenDate.getTime() : null;
+        const now = Date.now();
+        const timeSinceLastSeen = camLastSeen ? now - camLastSeen : Infinity;
+
+        // 判斷連接狀態
+        let status, statusClass, statusText;
+        if (
+          camera?.status?.online &&
+          timeSinceLastSeen < CAMERA_POOR_CONNECTION_THRESHOLD
+        ) {
+          status = "excellent";
+          statusClass = "badge-success";
+          statusText = "Online";
+        } else if (
+          camera?.status?.online &&
+          timeSinceLastSeen < CAMERA_OFFLINE_THRESHOLD
+        ) {
+          status = "poor";
+          statusClass = "badge-warning";
+          statusText = "Poor Connection";
+        } else {
+          status = "offline";
+          statusClass = "badge-danger";
+          statusText = "Offline";
+        }
+
+        refs.badge.textContent = statusText;
+        refs.badge.className = `badge ${statusClass}`;
+
+        // 添加重連次數和錯誤信息（如果有）
+        if (camera?.reconnect_attempts > 0) {
+          refs.badge.title = `重連次數: ${camera.reconnect_attempts}${
+            camera.last_error ? `\n錯誤: ${camera.last_error}` : ""
+          }`;
+        } else {
+          refs.badge.title = "";
+        }
+        card.classList.toggle("video-card-offline", status === "offline");
+
+        // 移除 HLS 相關邏輯，直接使用 MJPEG 串流
+        const useHls = false; // 強制使用 MJPEG 模式
+        const pendingHls = false;
+
+        // 移除視圖切換相關邏輯，只顯示 MJPEG 模式
+        if (refs.viewLabel) {
+          refs.viewLabel.textContent = "顯示模式：MJPEG 即時串流";
+        }
+
+        // 隱藏視圖切換按鈕（不再需要）
+        if (refs.viewToggle) {
+          refs.viewToggle.style.display = "none";
+        }
+
+        // 清理任何現有的 video 元素
+        if (refs.video) {
+          destroyHlsPlayer(slug);
+          refs.video.remove();
+          refs.video = null;
+        }
+
+        // 創建或更新 img 元素來顯示 MJPEG 串流
+        if (!refs.image && slug) {
+          const img = document.createElement("img");
+          img.className = "video-feed";
+          img.alt = `${slug || "camera"} feed`;
+          img.style.width = "100%";
+          img.style.height = "100%";
+          img.style.objectFit = "contain";
+          img.style.borderRadius = "8px";
+          img.style.backgroundColor = "#000";
+          img.addEventListener("error", () => {
+            img.classList.add("video-feed-error");
+            console.warn(`Camera ${slug} feed error`);
+            // 更新攝影機狀態為離線
+            if (refs.badge) {
+              refs.badge.textContent = "Connection Error";
+              refs.badge.className = "badge badge-danger";
+            }
+          });
+          img.addEventListener("load", () => {
+            img.classList.remove("video-feed-error");
+            // 清除錯誤狀態
+            if (refs.badge && refs.badge.textContent === "Connection Error") {
+              refs.badge.textContent = "Online";
+              refs.badge.className = "badge badge-success";
+            }
+          });
+          refs.mediaWrapper.appendChild(img);
+          refs.image = img;
+        }
+
+        // 設置 MJPEG 串流源
+        if (refs.image && slug) {
+          const feedSrc = `/video_feed?camera=${encodeURIComponent(slug)}`;
+          if (refs.image.dataset.src !== feedSrc) {
+            refs.image.src = feedSrc;
+            refs.image.dataset.src = feedSrc;
+          }
+        }
+
+        // 隱藏警告信息（不再需要 HLS 相關警告）
+        refs.warning.style.display = "none";
+      }
+
+      function toNumber(value, fallback = 0) {
+        const num = Number(value);
+        if (Number.isFinite) {
+          return Number.isFinite(num) ? num : fallback;
+        }
+        return isFinite(num) ? num : fallback;
+      }
+
+      function decodeJwt(token) {
+        try {
+          const payload = JSON.parse(atob(token.split(".")[1]));
+          return payload;
+        } catch (error) {
+          console.error("Failed to decode JWT", error);
+          return null;
+        }
+      }
+
+      function parseTimestamp(value) {
+        if (!value) return null;
+        if (value instanceof Date) return value;
+        if (typeof value !== "string") return null;
+        let normalized = value.trim();
+        if (!normalized) return null;
+        if (!/Z$/i.test(normalized)) {
+          normalized += "Z";
+        }
+        normalized = normalized.replace(/\.(\d{3})\d*Z$/i, ".$1Z");
+        const date = new Date(normalized);
+        return Number.isNaN(date.getTime()) ? null : date;
+      }
+
+      function escapeHtml(value) {
+        if (value == null) return "";
+        return String(value)
+          .replace(/&/g, "&amp;")
+          .replace(/</g, "&lt;")
+          .replace(/>/g, "&gt;")
+          .replace(/"/g, "&quot;")
+          .replace(/'/g, "&#39;");
+      }
+
+      function formatDateTime(value) {
+        const dt = parseTimestamp(value);
+        if (!dt) return value || "-";
+        return dt.toLocaleString();
+      }
+
+      function userHasPermission(permission) {
+        if (!permission || !currentUser) return false;
+        const perms = Array.isArray(currentUser.permissions)
+          ? currentUser.permissions
+          : [];
+        return perms.includes(permission);
+      }
+
+      function storeAuthMessage(reason) {
+        if (!reason) return;
+        try {
+          sessionStorage.setItem(AUTH_MESSAGE_KEY, reason);
+        } catch (error) {
+          console.warn("Unable to store auth message", error);
+        }
+      }
+
+      function redirectToLogin(reason) {
+        if (reason) {
+          storeAuthMessage(reason);
+        }
+        window.location.href = "/login.html";
+      }
+
+      function persistCurrentUser(user) {
+        if (!user) return;
+        try {
+          sessionStorage.setItem(AUTH_USER_KEY, JSON.stringify(user));
+        } catch (error) {
+          console.warn("Unable to persist current user", error);
+        }
+      }
+
+      function clearPersistedCurrentUser() {
+        try {
+          sessionStorage.removeItem(AUTH_USER_KEY);
+        } catch (error) {
+          console.warn("Unable to clear stored user", error);
+        }
+      }
+
+      function clearRefreshTimer() {
+        if (refreshTimer) {
+          clearTimeout(refreshTimer);
+          refreshTimer = null;
+        }
+      }
+
+      function scheduleTokenRefresh() {
+        clearRefreshTimer();
+        const token = localStorage.getItem("access_token");
+        if (!token) return;
+
+        const payload = decodeJwt(token);
+        if (!payload || !payload.exp) return;
+
+        const expiresAt = payload.exp * 1000;
+        const now = Date.now();
+        const leadTime = 60 * 1000;
+        let delay = expiresAt - now - leadTime;
+        if (delay <= 0) {
+          delay = 5_000;
+        }
+        refreshTimer = setTimeout(refreshAccessToken, delay);
+      }
+
+      async function refreshAccessToken() {
+        const refreshToken = localStorage.getItem("refresh_token");
+        if (!refreshToken) {
+          await logout(true, "session_expired");
+          return;
+        }
+
+        try {
+          const response = await fetch("/auth/refresh", {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+            },
+            body: JSON.stringify({ refresh_token: refreshToken }),
+          });
+
+          if (!response.ok) {
+            throw new Error(`refresh_failed_${response.status}`);
+          }
+
+          const data = await response.json();
+          if (!data.access_token || !data.refresh_token) {
+            throw new Error("invalid_refresh_response");
+          }
+
+          localStorage.setItem("access_token", data.access_token);
+          localStorage.setItem("refresh_token", data.refresh_token);
+
+          if (data.user) {
+            currentUser = data.user;
+            userRole = data.user.role || userRole;
+            updateUserInfo();
+            updateUIForRole();
+            persistCurrentUser(currentUser);
+          }
+
+          scheduleTokenRefresh();
+        } catch (error) {
+          console.error("Refresh token failed:", error);
+          await logout(true, "session_expired");
+          return;
+        }
+      }
+
+      // Initialize dashboard
+      document.addEventListener("DOMContentLoaded", function () {
+        checkAuth();
+        initializeChart();
+        initializeCameraManagement();
+        initializeExportButtons();
+      });
+
+      // Check authentication
+      async function checkAuth() {
+        console.log("=== checkAuth() 開始執行 ===");
+        try {
+          const token = localStorage.getItem("access_token");
+          console.log("Token 存在:", !!token);
+
+          if (!token) {
+            console.log("No token found, redirecting to login");
+            clearPersistedCurrentUser();
+            redirectToLogin("login_required");
+            return;
+          }
+
+          console.log(
+            "Checking authentication with token:",
+            token.substring(0, 20) + "..."
+          );
+
+          console.log("發送請求到 /auth/me...");
+          const response = await fetch("/auth/me", {
+            headers: { Authorization: `Bearer ${token}` },
+          });
+
+          console.log("Auth verify response status:", response.status);
+          console.log("Auth verify response ok:", response.ok);
+
+          if (!response.ok) {
+            console.log(
+              "Auth verification failed, response:",
+              response.status,
+              response.statusText
+            );
+            const errorText = await response.text();
+            console.log("Error response body:", errorText);
+            console.log("清理 token 並重定向...");
+            await logout(true, "session_expired");
+            return;
+          }
+
+          const userData = await response.json();
+          console.log("Auth successful, user data:", userData);
+
+          currentUser = userData;
+          userRole = userData.role;
+          persistCurrentUser(currentUser);
+
+          updateUserInfo();
+          updateUIForRole();
+          scheduleTokenRefresh();
+
+          // 延遲載入數據，讓頁面先顯示
+          setTimeout(() => {
+            loadData();
+            connectWebSocket();
+            if (metricsPollingTimer) clearInterval(metricsPollingTimer);
+            metricsPollingTimer = setInterval(loadData, 5000);
+
+            // 啟動攝影機健康檢查
+            startCameraHealthCheck();
+          }, 500);
+        } catch (error) {
+          console.error("Auth check failed:", error);
+          await logout(true, "session_invalid");
+        }
+      }
+
+      // Update user info
+      function updateUserInfo() {
+        const userInfo = document.getElementById("userInfo");
+        const welcomeMsg = document.getElementById("welcomeMessage");
+
+        if (userInfo && currentUser) {
+          userInfo.innerHTML = `
+                          <i class="fas fa-user"></i> ${currentUser.username}
+                          <span class="role-badge role-${userRole}">${getRoleDisplayName(
+            userRole
+          )}</span>
+                      `;
+        }
+
+        if (welcomeMsg) {
+          const roleNames = {
+            admin: "管理員",
+            operator: "操作員",
+            viewer: "查看者",
+          };
+          welcomeMsg.textContent = `歡迎，${roleNames[userRole] || userRole}！`;
+        }
+      }
+
+      // Get role display name
+      function getRoleDisplayName(role) {
+        const roleNames = {
+          admin: "管理員",
+          operator: "操作員",
+          viewer: "查看者",
+        };
+        return roleNames[role] || role;
+      }
+
+      // Update UI based on role
+      function updateUIForRole() {
+        applyDetectionButtonState();
+
+        const cameraPanel = document.getElementById("cameraManagementPanel");
+        const cameraCard = cameraPanel ? cameraPanel.parentElement : null;
+
+        if (cameraCard) {
+          cameraCard.style.display = userHasPermission("camera_management")
+            ? ""
+            : "none";
+        }
+
+        updateExportButtons();
+      }
+
+      // Initialize chart
+      function initializeChart() {
+        const ctx = document.getElementById("metricsChart").getContext("2d");
+        metricsChart = new Chart(ctx, {
+          type: "line",
+          data: {
+            labels: [],
+            datasets: [
+              {
+                label: "平均處理 FPS",
+                data: [],
+                borderColor: "#667eea",
+                backgroundColor: "rgba(102, 126, 234, 0.1)",
+                tension: 0.4,
+              },
+              {
+                label: "平均偵測人數",
+                data: [],
+                borderColor: "#4ade80",
+                backgroundColor: "rgba(74, 222, 128, 0.1)",
+                tension: 0.4,
+              },
+            ],
+          },
+          options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            scales: { y: { beginAtZero: true } },
+            plugins: { legend: { position: "top" } },
+          },
+        });
+      }
+
+      function setCameraFormMessage(type, text) {
+        const message = document.getElementById("cameraFormMessage");
+        if (!message) return;
+        if (!text) {
+          message.style.display = "none";
+          message.textContent = "";
+          message.className = "camera-form-message";
+          return;
+        }
+        message.textContent = text;
+        message.className = `camera-form-message ${type}`;
+        message.style.display = "block";
+      }
+
+      function resetCameraForm() {
+        const form = document.getElementById("cameraCreateForm");
+        if (!form) return;
+        form.reset();
+        cameraFormMode = "create";
+        cameraFormEditingSlug = null;
+        const slugInput = document.getElementById("cameraSlug");
+        if (slugInput) {
+          slugInput.disabled = false;
+        }
+        const submitBtn = form.querySelector("button[type='submit']");
+        if (submitBtn) {
+          submitBtn.innerHTML = `<i class="fas fa-plus"></i> 新增攝影機`;
+          submitBtn.disabled = false;
+        }
+        if (cameraFormCancelBtn) {
+          cameraFormCancelBtn.style.display = "none";
+          cameraFormCancelBtn.disabled = false;
+        }
+        setCameraFormMessage(null, "");
+      }
+
+      function initializeCameraManagement() {
+        const form = document.getElementById("cameraCreateForm");
+        if (!form) return;
+
+        if (!cameraFormCancelBtn) {
+          cameraFormCancelBtn = document.createElement("button");
+          cameraFormCancelBtn.type = "button";
+          cameraFormCancelBtn.className = "btn btn-ghost";
+          cameraFormCancelBtn.textContent = "取消編輯";
+          cameraFormCancelBtn.style.display = "none";
+          cameraFormCancelBtn.addEventListener("click", () => {
+            resetCameraForm();
+          });
+          const actions = form.querySelector(".form-actions");
+          if (actions) {
+            actions.appendChild(cameraFormCancelBtn);
+          }
+        }
+
+        form.addEventListener("submit", async (event) => {
+          event.preventDefault();
+          await handleCameraFormSubmit(event);
+        });
+      }
+
+      function getFilenameFromDisposition(disposition) {
+        if (!disposition) return null;
+        const match = disposition.match(/filename="?([^";]+)"?/i);
+        return match ? match[1] : null;
+      }
+
+      function updateExportButtons() {
+        const canExport = userHasPermission("data_export");
+        const csvBtn = document.getElementById("exportCsvBtn");
+        const excelBtn = document.getElementById("exportExcelBtn");
+        if (csvBtn) {
+          csvBtn.style.display = canExport ? "inline-flex" : "none";
+          csvBtn.disabled = !canExport;
+        }
+        if (excelBtn) {
+          excelBtn.style.display = canExport ? "inline-flex" : "none";
+          excelBtn.disabled = !canExport;
+        }
+      }
+
+      function initializeExportButtons() {
+        const csvBtn = document.getElementById("exportCsvBtn");
+        const excelBtn = document.getElementById("exportExcelBtn");
+        if (csvBtn) {
+          csvBtn.addEventListener("click", () => downloadExport("csv"));
+        }
+        if (excelBtn) {
+          excelBtn.addEventListener("click", () => downloadExport("excel"));
+        }
+        updateExportButtons();
+      }
+
+      async function downloadExport(format) {
+        const token = localStorage.getItem("access_token");
+        if (!token) return;
+        const url =
+          format === "excel" ? "/export/metrics.xlsx" : "/export/metrics.csv";
+        try {
+          const response = await fetch(url, {
+            headers: { Authorization: `Bearer ${token}` },
+          });
+          if (response.status === 401) {
+            await logout(true, "session_expired");
+            return;
+          }
+          if (!response.ok) {
+            const detail = await response.text();
+            alert(detail || "匯出失敗");
+            return;
+          }
+          const blob = await response.blob();
+          const disposition = response.headers.get("content-disposition");
+          const filename =
+            getFilenameFromDisposition(disposition) ||
+            `metrics_export.${format === "excel" ? "xlsx" : "csv"}`;
+          const link = document.createElement("a");
+          const objectUrl = URL.createObjectURL(blob);
+          link.href = objectUrl;
+          link.download = filename;
+          document.body.appendChild(link);
+          link.click();
+          document.body.removeChild(link);
+          URL.revokeObjectURL(objectUrl);
+        } catch (error) {
+          console.error("download export failed", error);
+          alert("匯出時發生錯誤");
+        }
+      }
+
+      async function handleCameraFormSubmit(event) {
+        const form = event.target;
+        const token = localStorage.getItem("access_token");
+        if (!token) {
+          await logout(true, "session_invalid");
+          return;
+        }
+
+        const slugInput = document.getElementById("cameraSlug");
+        const nameInput = document.getElementById("cameraName");
+        const urlInput = document.getElementById("cameraUrl");
+        const protocolInput = document.getElementById("cameraProtocol");
+        const enabledInput = document.getElementById("cameraEnabled");
+        const descriptionInput = document.getElementById("cameraDescription");
+
+        const slug = slugInput?.value.trim();
+        const name = nameInput?.value.trim();
+        const sourceUrl = urlInput?.value.trim();
+        const protocol = protocolInput?.value || "rtsp";
+        const enabled = Boolean(enabledInput?.checked);
+        const description = descriptionInput?.value?.trim() || null;
+
+        if (!slug || !name || !sourceUrl) {
+          setCameraFormMessage("error", "請填寫完整的攝影機資訊。");
+          return;
+        }
+
+        const submitBtn = form.querySelector("button[type='submit']");
+        if (submitBtn) submitBtn.disabled = true;
+        if (cameraFormCancelBtn) cameraFormCancelBtn.disabled = true;
+        setCameraFormMessage(null, "");
+
+        const headers = {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        };
+
+        try {
+          let response;
+          if (cameraFormMode === "update" && cameraFormEditingSlug) {
+            const body = {
+              name,
+              source_url: sourceUrl,
+              protocol,
+              description,
+              enabled,
+            };
+            response = await fetch(
+              `/api/v1/admin/cameras/${encodeURIComponent(
+                cameraFormEditingSlug
+              )}`,
+              {
+                method: "PUT",
+                headers,
+                body: JSON.stringify(body),
+              }
+            );
+          } else {
+            const body = {
+              slug,
+              name,
+              source_url: sourceUrl,
+              protocol,
+              description,
+              enabled,
+            };
+            response = await fetch(`/api/v1/admin/cameras`, {
+              method: "POST",
+              headers,
+              body: JSON.stringify(body),
+            });
+          }
+
+          if (response.status === 401) {
+            await logout(true, "session_expired");
+            return;
+          }
+
+          const data = await response.json().catch(() => null);
+          if (!response.ok) {
+            const detail = data?.detail || "操作失敗";
+            setCameraFormMessage("error", detail);
+            return;
+          }
+
+          setCameraFormMessage(
+            "success",
+            cameraFormMode === "update" ? "攝影機已更新" : "攝影機已建立"
+          );
+          resetCameraForm();
+          await refreshCameraManagementData();
+        } catch (error) {
+          console.error("camera form submit failed", error);
+          setCameraFormMessage("error", "送出請求時發生錯誤");
+        } finally {
+          if (submitBtn) submitBtn.disabled = false;
+          if (cameraFormCancelBtn) cameraFormCancelBtn.disabled = false;
+        }
+      }
+
+      async function refreshCameraManagementData() {
+        const token = localStorage.getItem("access_token");
+        if (!token) return;
+        try {
+          const response = await fetch("/api/v1/cameras", {
+            headers: { Authorization: `Bearer ${token}` },
+          });
+          if (response.ok) {
+            const payload = await response.json();
+            updateCameraStatus(payload.status);
+            renderCameraManagement(payload.cameras || []);
+          }
+        } catch (error) {
+          console.error("Failed to refresh camera data", error);
+        }
+      }
+
+      function createActionButton(label, className, handler) {
+        const button = document.createElement("button");
+        button.type = "button";
+        button.className = `btn ${className}`;
+        button.textContent = label;
+        button.addEventListener("click", handler);
+        return button;
+      }
+
+      function renderCameraFeed(cameras) {
+        const container = document.getElementById("cameraFeedContainer");
+        if (!container) return;
+
+        removeCameraFeedPlaceholder(container);
+
+        const existingCards = new Map();
+        container.querySelectorAll(".video-card[data-slug]").forEach((card) => {
+          existingCards.set(card.dataset.slug, card);
+        });
+
+        const hasCameras = Array.isArray(cameras) && cameras.length > 0;
+        if (!hasCameras) {
+          existingCards.forEach((card, slug) => {
+            destroyHlsPlayer(slug);
+            card.remove();
+          });
+          cleanupHlsPlayers([]);
+          ensureCameraFeedPlaceholder(container, "目前沒有可用的攝影機資料");
+          return;
+        }
+
+        const activeCameras = cameras.filter((camera) => camera?.enabled);
+        if (!activeCameras.length) {
+          existingCards.forEach((card, slug) => {
+            destroyHlsPlayer(slug);
+            card.remove();
+          });
+          cleanupHlsPlayers([]);
+          ensureCameraFeedPlaceholder(container, "所有攝影機目前都標記為停用");
+          return;
+        }
+
+        const activeSlugs = new Set();
+
+        activeCameras.forEach((camera) => {
+          const slug = camera?.slug;
+          if (!slug) {
+            return;
+          }
+          activeSlugs.add(slug);
+          let card = existingCards.get(slug);
+          if (!card) {
+            card = createCameraCard(camera);
+            container.appendChild(card);
+          }
+          updateCameraCard(card, camera);
+        });
+
+        existingCards.forEach((card, slug) => {
+          if (!activeSlugs.has(slug)) {
+            destroyHlsPlayer(slug);
+            card.remove();
+          }
+        });
+
+        if (!container.querySelector(".video-card")) {
+          ensureCameraFeedPlaceholder(container, "目前沒有可用的攝影機資料");
+        } else {
+          removeCameraFeedPlaceholder(container);
+        }
+
+        cleanupHlsPlayers(Array.from(activeSlugs));
+      }
+
+      function renderCameraManagement(cameras) {
+        const panel = document.getElementById("cameraManagementPanel");
+        const list = document.getElementById("cameraManagementList");
+        const card = panel ? panel.parentElement : null;
+        const canManage = userHasPermission("camera_management");
+
+        latestCameras = Array.isArray(cameras) ? cameras : [];
+
+        renderCameraFeed(cameras);
+
+        if (card) {
+          card.style.display = canManage ? "" : "none";
+        }
+
+        if (!canManage || !list) {
+          return;
+        }
+
+        if (!Array.isArray(cameras) || cameras.length === 0) {
+          list.innerHTML =
+            '<div class="camera-management-empty">尚未建立攝影機。</div>';
+          return;
+        }
+
+        list.innerHTML = "";
+
+        cameras.forEach((camera) => {
+          const cardEl = document.createElement("div");
+          cardEl.className = "camera-management-card";
+
+          const header = document.createElement("header");
+          const enabledBadge = camera.enabled
+            ? "badge-success"
+            : "badge-warning";
+          const enabledLabel = camera.enabled ? "已啟用" : "已停用";
+          const online = camera.status?.online;
+          const onlineBadge = online ? "badge-success" : "badge-danger";
+          const onlineLabel = online ? "Online" : "Offline";
+          header.innerHTML = `
+                  <span>
+                    ${escapeHtml(camera.name || camera.slug)}
+                    <span class="badge ${enabledBadge}">${enabledLabel}</span>
+                  </span>
+                  <span class="badge ${onlineBadge}">${onlineLabel}</span>
+                `;
+          cardEl.appendChild(header);
+
+          const meta = document.createElement("div");
+          meta.className = "camera-meta";
+          const metaLines = [];
+          metaLines.push(`Slug: <code>${escapeHtml(camera.slug)}</code>`);
+          metaLines.push(`類型: ${escapeHtml(camera.protocol || "-")}`);
+          const statusInfo = camera.status || {};
+          if (statusInfo.status) {
+            metaLines.push(`連線狀態: <span class="badge">${escapeHtml(String(statusInfo.status).toUpperCase())}</span>`);
+          }
+          if (statusInfo.connection_quality) {
+            const quality = String(statusInfo.connection_quality).toLowerCase();
+            const qualityBadge =
+              quality === "excellent"
+                ? "badge-success"
+                : quality === "good"
+                ? "badge-primary"
+                : quality === "poor"
+                ? "badge-danger"
+                : "badge-secondary";
+            const qualityLabel =
+              quality === "excellent"
+                ? "極佳"
+                : quality === "good"
+                ? "良好"
+                : quality === "poor"
+                ? "偏弱"
+                : quality || "未知";
+            metaLines.push(`連線品質: <span class="badge ${qualityBadge}">${escapeHtml(qualityLabel)}</span>`);
+          }
+          const fpsSource = toNumber(statusInfo.fps_source, null);
+          const fpsProcessing = toNumber(statusInfo.fps_processing, null);
+          if (fpsSource !== null || fpsProcessing !== null) {
+            metaLines.push(`FPS (來源 / 處理): ${
+              fpsSource !== null ? fpsSource.toFixed(1) : "-"
+            } / ${fpsProcessing !== null ? fpsProcessing.toFixed(1) : "-"}`);
+          }
+          const cpuUsage = toNumber(statusInfo.cpu_percent, null);
+          const memoryUsage = toNumber(statusInfo.memory_mb, null);
+          if (cpuUsage !== null || memoryUsage !== null) {
+            metaLines.push(`資源 (CPU% / 記憶體MB): ${
+              cpuUsage !== null ? cpuUsage.toFixed(1) : "-"
+            } / ${memoryUsage !== null ? memoryUsage.toFixed(1) : "-"}`);
+          }
+          if (typeof statusInfo.reconnect_attempts === "number") {
+            metaLines.push(`重連次數: ${statusInfo.reconnect_attempts}`);
+          }
+          if (statusInfo.last_error) {
+            metaLines.push(`最近錯誤: ${escapeHtml(statusInfo.last_error)}`);
+          }
+          if (statusInfo.last_online) {
+            metaLines.push(`最近在線: ${formatDateTime(statusInfo.last_online)}`);
+          }
+          if (camera.source_url) {
+            metaLines.push(
+              `URL: <code>${escapeHtml(camera.source_url)}</code>`
+            );
+          }
+          if (camera.description) {
+            metaLines.push(`備註: ${escapeHtml(camera.description)}`);
+          }
+          if (camera.status?.last_seen) {
+            metaLines.push(
+              `來源最後更新: ${formatDateTime(camera.status.last_seen)}`
+            );
+          }
+          if (camera.last_test_status) {
+            const testBadge =
+              camera.last_test_status === "online"
+                ? "badge-success"
+                : "badge-danger";
+            metaLines.push(
+              `最後測試: <span class="badge ${testBadge}">${escapeHtml(
+                camera.last_test_status
+              )}</span> ${
+                camera.last_test_message
+                  ? escapeHtml(camera.last_test_message) + " "
+                  : ""
+              }(${formatDateTime(camera.last_tested_at)})`
+            );
+          } else {
+            metaLines.push("最後測試: 尚未執行");
+          }
+          metaLines.push(`設定更新時間: ${formatDateTime(camera.updated_at)}`);
+          meta.innerHTML = metaLines
+            .map((line) => `<span>${line}</span>`)
+            .join("");
+          cardEl.appendChild(meta);
+
+          const actions = document.createElement("div");
+          actions.className = "camera-actions";
+
+          actions.appendChild(
+            createActionButton("測試串流", "btn-secondary", () =>
+              testCamera(camera.slug)
+            )
+          );
+
+          actions.appendChild(
+            createActionButton(
+              camera.enabled ? "停用" : "啟用",
+              camera.enabled ? "btn-ghost" : "btn-secondary",
+              () => toggleCameraEnabled(camera.slug, !camera.enabled)
+            )
+          );
+
+          actions.appendChild(
+            createActionButton("編輯", "btn-primary", () =>
+              fillCameraFormForEdit(camera)
+            )
+          );
+
+          actions.appendChild(
+            createActionButton("刪除", "btn-danger", () =>
+              deleteCamera(camera.slug)
+            )
+          );
+
+          cardEl.appendChild(actions);
+          list.appendChild(cardEl);
+        });
+      }
+
+      function fillCameraFormForEdit(camera) {
+        const form = document.getElementById("cameraCreateForm");
+        if (!form) return;
+        cameraFormMode = "update";
+        cameraFormEditingSlug = camera.slug;
+        const slugInput = document.getElementById("cameraSlug");
+        const nameInput = document.getElementById("cameraName");
+        const urlInput = document.getElementById("cameraUrl");
+        const protocolInput = document.getElementById("cameraProtocol");
+        const enabledInput = document.getElementById("cameraEnabled");
+        const descriptionInput = document.getElementById("cameraDescription");
+        if (slugInput) {
+          slugInput.value = camera.slug;
+          slugInput.disabled = true;
+        }
+        if (nameInput) nameInput.value = camera.name || "";
+        if (urlInput) urlInput.value = camera.source_url || "";
+        if (protocolInput) protocolInput.value = camera.protocol || "rtsp";
+        if (enabledInput) enabledInput.checked = Boolean(camera.enabled);
+        if (descriptionInput) descriptionInput.value = camera.description || "";
+        if (cameraFormCancelBtn) {
+          cameraFormCancelBtn.style.display = "inline-flex";
+        }
+        const submitBtn = form.querySelector("button[type='submit']");
+        if (submitBtn) {
+          submitBtn.innerHTML = `<i class="fas fa-save"></i> 儲存變更`;
+        }
+        setCameraFormMessage(null, "正在編輯攝影機設定");
+      }
+
+      async function toggleCameraEnabled(slug, nextEnabled) {
+        const token = localStorage.getItem("access_token");
+        if (!token) return;
+        try {
+          const response = await fetch(
+            `/api/v1/admin/cameras/${encodeURIComponent(slug)}`,
+            {
+              method: "PUT",
+              headers: {
+                "Content-Type": "application/json",
+                Authorization: `Bearer ${token}`,
+              },
+              body: JSON.stringify({ enabled: nextEnabled }),
+            }
+          );
+          if (response.status === 401) {
+            await logout(true, "session_expired");
+            return;
+          }
+          if (!response.ok) {
+            const data = await response.json().catch(() => null);
+            const detail = data?.detail || "更新失敗";
+            setCameraFormMessage("error", detail);
+            return;
+          }
+          await refreshCameraManagementData();
+        } catch (error) {
+          console.error("toggle camera state failed", error);
+          setCameraFormMessage("error", "切換攝影機狀態時發生錯誤");
+        }
+      }
+
+      async function deleteCamera(slug) {
+        if (!confirm(`確定要刪除攝影機 ${slug} 嗎？`)) {
+          return;
+        }
+        const token = localStorage.getItem("access_token");
+        if (!token) return;
+        try {
+          const response = await fetch(
+            `/api/v1/admin/cameras/${encodeURIComponent(slug)}`,
+            {
+              method: "DELETE",
+              headers: {
+                Authorization: `Bearer ${token}`,
+              },
+            }
+          );
+          if (response.status === 401) {
+            await logout(true, "session_expired");
+            return;
+          }
+          if (!response.ok) {
+            const data = await response.json().catch(() => null);
+            const detail = data?.detail || "刪除失敗";
+            setCameraFormMessage("error", detail);
+            return;
+          }
+          if (cameraFormMode === "update" && cameraFormEditingSlug === slug) {
+            resetCameraForm();
+          }
+          await refreshCameraManagementData();
+          setCameraFormMessage("success", "攝影機已刪除");
+        } catch (error) {
+          console.error("delete camera failed", error);
+          setCameraFormMessage("error", "刪除攝影機時發生錯誤");
+        }
+      }
+
+      async function testCamera(slug) {
+        const token = localStorage.getItem("access_token");
+        if (!token) return;
+        setCameraFormMessage(null, "");
+        try {
+          const response = await fetch(
+            `/api/v1/admin/cameras/${encodeURIComponent(slug)}/test`,
+            {
+              method: "POST",
+              headers: {
+                "Content-Type": "application/json",
+                Authorization: `Bearer ${token}`,
+              },
+              body: JSON.stringify({}),
+            }
+          );
+          if (response.status === 401) {
+            await logout(true, "session_expired");
+            return;
+          }
+          const data = await response.json().catch(() => null);
+          if (!response.ok) {
+            const detail = data?.detail || "測試失敗";
+            setCameraFormMessage("error", detail);
+            return;
+          }
+          setCameraFormMessage(
+            data?.success ? "success" : "error",
+            data?.message || (data?.success ? "串流測試成功" : "串流測試失敗")
+          );
+          await refreshCameraManagementData();
+        } catch (error) {
+          console.error("test camera failed", error);
+          setCameraFormMessage("error", "測試串流時發生錯誤");
+        }
+      }
+
+      // Load data
+      async function loadData() {
+        try {
+          const token = localStorage.getItem("access_token");
+          if (!token) {
+            console.log("loadData: No token available, skipping data load");
+            return;
+          }
+          const headers = { Authorization: `Bearer ${token}` };
+
+          // 並行載入所有數據
+          const [metricsRes, camerasRes] = await Promise.allSettled([
+            fetch("/api/v1/metrics", { headers }).then((res) =>
+              res.ok ? res.json() : null
+            ),
+            fetch("/api/v1/cameras", { headers }).then((res) =>
+              res.ok ? res.json() : null
+            ),
+          ]);
+
+          // 處理 metrics
+          if (metricsRes.status === "fulfilled" && metricsRes.value) {
+            const payload = metricsRes.value.current || metricsRes.value;
+            updateDashboard({ metrics: payload });
+          }
+
+          // 處理 cameras
+          if (camerasRes.status === "fulfilled" && camerasRes.value) {
+            const cameras = camerasRes.value.cameras || [];
+            latestCameras = Array.isArray(cameras) ? cameras : [];
+            updateCameraStatus(camerasRes.value.status);
+            renderCameraManagement(cameras);
+          }
+        } catch (error) {
+          console.error("Error loading data:", error);
+        }
+      }
+
+      // Update dashboard
+      function updateDashboard(data) {
+        if (!data.metrics) {
+          return;
+        }
+
+        const metrics = data.metrics || {};
+        const people = toNumber(
+          metrics.people_count ?? metrics.peopleCount ?? metrics.people,
+          0
+        );
+        document.getElementById("peopleCount").textContent = Math.max(
+          0,
+          Math.round(people)
+        );
+
+        const fps = toNumber(metrics.fps_processing ?? metrics.fps, 0);
+        document.getElementById("fpsProcessing").textContent = fps.toFixed(1);
+
+        const latency = toNumber(metrics.latency_ms ?? metrics.latency, 0);
+        document.getElementById("latency").textContent = latency.toFixed(1);
+
+        const cpu = toNumber(metrics.cpu_percent ?? metrics.cpu_usage, 0);
+        document.getElementById("cpuUsage").textContent = cpu.toFixed(1);
+
+        updateChart(metrics);
+        renderCameraMetrics(metrics.streams || {});
+      }
+
+      function renderCameraMetrics(streams) {
+        const container = document.getElementById("cameraMetricsContainer");
+        if (!container) return;
+
+        container.innerHTML = "";
+        const entries = Object.entries(streams || {});
+        if (!entries.length) {
+          container.innerHTML =
+            "<p class='camera-metrics-empty'>目前沒有攝影機指標。</p>";
+          return;
+        }
+
+        entries.forEach(([cameraId, info]) => {
+          const card = document.createElement("div");
+          card.className = "camera-metric-card";
+
+          const title = document.createElement("div");
+          title.className = "camera-metric-title";
+          title.innerHTML = `<i class="fas fa-video"></i> ${cameraId}`;
+          card.appendChild(title);
+
+          const grid = document.createElement("div");
+          grid.className = "camera-metric-grid";
+
+          const metricsList = [
+            {
+              label: "處理 FPS",
+              value: toNumber(info.fps_processing ?? info.fps ?? 0, 0).toFixed(
+                1
+              ),
+            },
+            {
+              label: "來源 FPS",
+              value: toNumber(info.fps_source ?? 0, 0).toFixed(1),
+            },
+            {
+              label: "延遲 (ms)",
+              value: toNumber(info.latency_ms ?? 0, 0).toFixed(1),
+            },
+            {
+              label: "CPU (%)",
+              value: toNumber(info.cpu_percent ?? 0, 0).toFixed(1),
+            },
+          ];
+
+          metricsList.forEach((metric) => {
+            const item = document.createElement("div");
+            item.className = "camera-metric-item";
+            item.innerHTML = `
+                    <div class="camera-metric-value">${metric.value}</div>
+                    <div class="camera-metric-label">${metric.label}</div>
+                  `;
+            grid.appendChild(item);
+          });
+
+          card.appendChild(grid);
+          container.appendChild(card);
+        });
+      }
+
+      // Update chart
+      function updateChart(metrics) {
+        const now = new Date().toLocaleTimeString();
+        const fps = toNumber(metrics.fps_processing ?? metrics.fps, 0);
+        const people = toNumber(
+          metrics.people_count ?? metrics.peopleCount ?? metrics.people,
+          0
+        );
+        metricsChart.data.labels.push(now);
+        metricsChart.data.datasets[0].data.push(fps);
+        metricsChart.data.datasets[1].data.push(people);
+
+        if (metricsChart.data.labels.length > 20) {
+          metricsChart.data.labels.shift();
+          metricsChart.data.datasets[0].data.shift();
+          metricsChart.data.datasets[1].data.shift();
+        }
+
+        metricsChart.update("none");
+      }
+
+      // Update camera status
+      function updateCameraStatus(status) {
+        const statusDiv = document.getElementById("cameraStatus");
+        if (!statusDiv) return;
+
+        if (status) {
+          lastKnownCameraStatus = {
+            ...(lastKnownCameraStatus || {}),
+            ...status,
+          };
+        }
+
+        if (!lastKnownCameraStatus) {
+          statusDiv.textContent = "目前沒有攝影機資訊";
+          return;
+        }
+
+        const merged = lastKnownCameraStatus;
+        const available = toNumber(merged.available_cameras, 0);
+        const online = toNumber(merged.online_cameras ?? merged.online, 0);
+        const isRunning = Boolean(merged.is_running);
+        const lastUpdateDate = parseTimestamp(merged.last_update);
+        const lastUpdateMs = lastUpdateDate ? lastUpdateDate.getTime() : null;
+        const now = Date.now();
+        const isFresh =
+          lastUpdateMs !== null &&
+          now - lastUpdateMs < CAMERA_OFFLINE_THRESHOLD;
+        const effectiveRunning = isRunning && isFresh;
+        const color = effectiveRunning ? "#10b981" : "#ef4444";
+        const lastUpdate = lastUpdateMs
+          ? formatDateTime(merged.last_update)
+          : "-";
+
+        // 修正上線攝影機計算 - 使用 latestCameras 而不是 merged.cameras
+        const actuallyOnline = latestCameras
+          ? latestCameras.filter((cam) => {
+              if (!cam?.enabled) return false;
+              const camLastSeen = cam.status?.last_seen;
+              if (!camLastSeen) return false;
+              try {
+                // 處理不同的時間格式
+                let camLastSeenDate;
+                if (camLastSeen.includes("T") && camLastSeen.includes("Z")) {
+                  // ISO 格式帶 Z
+                  camLastSeenDate = new Date(camLastSeen);
+                } else if (camLastSeen.includes("T")) {
+                  // ISO 格式不帶 Z
+                  camLastSeenDate = new Date(camLastSeen + "Z");
+                } else {
+                  // 其他格式
+                  camLastSeenDate = new Date(camLastSeen);
+                }
+
+                const timeSinceLastSeen = now - camLastSeenDate.getTime();
+                const isOnline =
+                  cam.status?.online &&
+                  timeSinceLastSeen < CAMERA_OFFLINE_THRESHOLD;
+
+                // 調試信息
+                console.log(
+                  `Camera ${cam.slug}: online=${
+                    cam.status?.online
+                  }, lastSeen=${camLastSeen}, parsedDate=${camLastSeenDate.toISOString()}, timeSince=${timeSinceLastSeen}ms, threshold=${CAMERA_OFFLINE_THRESHOLD}ms, result=${isOnline}`
+                );
+
+                return isOnline;
+              } catch (error) {
+                console.error(`Error processing camera ${cam.slug}:`, error);
+                return false;
+              }
+            }).length
+          : 0;
+
+        // 調試信息
+        console.log(
+          `Status calculation: actuallyOnline=${actuallyOnline}, available=${available}, latestCameras count=${
+            latestCameras?.length || 0
+          }`
+        );
+
+        statusDiv.innerHTML = `攝影機狀態: <span style="color: ${color};">${
+          effectiveRunning ? "運行中" : "訊號延遲"
+        }</span> | 上線: ${actuallyOnline}/${available} | 最後更新: ${lastUpdate}`;
+
+        const systemStatus = document.getElementById("systemStatus");
+        if (systemStatus) {
+          const offlineCameras = (latestCameras || []).filter((cam) => {
+            if (!cam?.enabled) return false;
+            const camLastSeenDate = parseTimestamp(cam?.status?.last_seen);
+            const camLastSeen = camLastSeenDate
+              ? camLastSeenDate.getTime()
+              : null;
+            const camOnline = Boolean(cam?.status?.online);
+            const camFresh =
+              camLastSeen !== null &&
+              now - camLastSeen < CAMERA_OFFLINE_THRESHOLD;
+            return !(camOnline && camFresh);
+          });
+          const offlineNames = offlineCameras.map((cam) =>
+            escapeHtml(cam.name || cam.slug)
+          );
+          const offlinePreview = offlineNames.slice(0, 3).join(", ");
+          const offlineSuffix =
+            offlineNames.length > 3 ? ` 等 ${offlineNames.length} 台` : "";
+
+          systemStatus.innerHTML = `
+                  <div>運行狀態：<strong>${
+                    effectiveRunning ? "正常" : "待啟動"
+                  }</strong></div>
+                  <div>上線攝影機：${actuallyOnline}/${available}</div>
+                  <div>最後更新時間：${lastUpdate}</div>
+                  ${
+                    offlineNames.length
+                      ? `<div class="system-status-alert">離線攝影機：${offlinePreview}${offlineSuffix}</div>`
+                      : `<div class="system-status-ok">所有攝影機皆在線</div>`
+                  }
+                `;
+        }
+      }
+
+      // WebSocket connection
+      function connectWebSocket() {
+        const token = localStorage.getItem("access_token");
+        if (!token) {
+          console.log(
+            "connectWebSocket: No token available, skipping WebSocket connection"
+          );
+          return;
+        }
+        const protocol = window.location.protocol === "https:" ? "wss:" : "ws:";
+        const wsUrl = `${protocol}//${window.location.host}/ws/stream?token=${token}`;
+
+        websocket = new WebSocket(wsUrl);
+
+        websocket.onopen = function () {
+          console.log("WebSocket connected");
+        };
+        websocket.onmessage = function (event) {
+          try {
+            const data = JSON.parse(event.data);
+            updateDashboard(data);
+            if (data.status) {
+              updateCameraStatus(data.status);
+            }
+          } catch (e) {
+            console.error("Error parsing WebSocket message:", e);
+          }
+        };
+        websocket.onclose = function () {
+          console.log("WebSocket disconnected");
+          setTimeout(connectWebSocket, 3000);
+        };
+        websocket.onerror = function (error) {
+          console.error("WebSocket error:", error);
+        };
+      }
+
+      // 攝影機健康檢查
+      function startCameraHealthCheck() {
+        if (cameraHealthTimer) {
+          clearInterval(cameraHealthTimer);
+        }
+
+        cameraHealthTimer = setInterval(() => {
+          // 檢查所有攝影機的連接狀態
+          const cameraCards = document.querySelectorAll(".video-card");
+          cameraCards.forEach((card) => {
+            const slug = card.dataset.cameraSlug;
+            if (slug) {
+              updateCameraCard(
+                slug,
+                latestCameras.find((cam) => cam.slug === slug)
+              );
+            }
+          });
+        }, 5000); // 每5秒檢查一次
+      }
+
+      function stopCameraHealthCheck() {
+        if (cameraHealthTimer) {
+          clearInterval(cameraHealthTimer);
+          cameraHealthTimer = null;
+        }
+      }
+
+      // Control functions
+      async function startDetection() {
+        if (!userHasPermission("detection_control")) {
+          alert("\u6c92\u6709\u6b0a\u9650\u555f\u52d5\u5075\u6e2c\u3002");
+          return;
+        }
+
+        const token = localStorage.getItem("access_token");
+        if (!token) {
+          alert(
+            "\u767b\u5165\u72c0\u614b\u5df2\u5931\u6548\uff0c\u8acb\u91cd\u65b0\u767b\u5165\u3002"
+          );
+          await logout(true, "session_invalid");
+          return;
+        }
+
+        if (detectionActionPending) {
+          return;
+        }
+
+        detectionActionPending = true;
+        applyDetectionButtonState();
+
+        try {
+          const response = await fetch("/api/v1/detection/start", {
+            method: "POST",
+            headers: {
+              Authorization: `Bearer ${token}`,
+            },
+          });
+
+          if (!response.ok) {
+            let detail = null;
+            try {
+              detail = await response.json();
+            } catch (error) {
+              // ignore json parse error
+            }
+            const message =
+              (detail && (detail.detail || detail.message)) ||
+              `\u555f\u52d5\u5075\u6e2c\u5931\u6557?${response.status}?`;
+            alert(message);
+            return;
+          }
+
+          alert("\u5075\u6e2c\u670d\u52d9\u5df2\u555f\u52d5\u3002");
+        } catch (error) {
+          console.error("Start detection failed:", error);
+          alert(
+            "\u555f\u52d5\u5075\u6e2c\u6642\u767c\u751f\u932f\u8aa4\uff0c\u8acb\u7a0d\u5f8c\u518d\u8a66\u3002"
+          );
+        } finally {
+          detectionActionPending = false;
+          applyDetectionButtonState();
+        }
+      }
+
+      async function stopDetection() {
+        if (!userHasPermission("detection_control")) {
+          alert("\u6c92\u6709\u6b0a\u9650\u505c\u6b62\u5075\u6e2c\u3002");
+          return;
+        }
+
+        const token = localStorage.getItem("access_token");
+        if (!token) {
+          alert(
+            "\u767b\u5165\u72c0\u614b\u5df2\u5931\u6548\uff0c\u8acb\u91cd\u65b0\u767b\u5165\u3002"
+          );
+          await logout(true, "session_invalid");
+          return;
+        }
+
+        if (detectionActionPending) {
+          return;
+        }
+
+        detectionActionPending = true;
+        applyDetectionButtonState();
+
+        try {
+          const response = await fetch("/api/v1/detection/stop", {
+            method: "POST",
+            headers: {
+              Authorization: `Bearer ${token}`,
+            },
+          });
+
+          if (!response.ok) {
+            let detail = null;
+            try {
+              detail = await response.json();
+            } catch (error) {
+              // ignore json parse error
+            }
+            const message =
+              (detail && (detail.detail || detail.message)) ||
+              `\u505c\u6b62\u5075\u6e2c\u5931\u6557?${response.status}?`;
+            alert(message);
+            return;
+          }
+
+          alert("\u5075\u6e2c\u670d\u52d9\u5df2\u505c\u6b62\u3002");
+        } catch (error) {
+          console.error("Stop detection failed:", error);
+          alert(
+            "\u505c\u6b62\u5075\u6e2c\u6642\u767c\u751f\u932f\u8aa4\uff0c\u8acb\u7a0d\u5f8c\u518d\u8a66\u3002"
+          );
+        } finally {
+          detectionActionPending = false;
+          applyDetectionButtonState();
+        }
+      }
+
+      async function updateDetectionButtons() {
+        try {
+          const token = localStorage.getItem("access_token");
+          const response = await fetch("/api/v1/detection/status", {
+            headers: { Authorization: `Bearer ${token}` },
+          });
+
+          const result = await response.json();
+          const startBtn = document.getElementById("startDetectionBtn");
+          const stopBtn = document.getElementById("stopDetectionBtn");
+
+          if (result.status === "running") {
+            if (startBtn) {
+              startBtn.disabled = true;
+              startBtn.innerHTML = '<i class="fas fa-play"></i> 偵測運行中';
+            }
+            if (stopBtn) {
+              stopBtn.disabled = false;
+              stopBtn.innerHTML = '<i class="fas fa-stop"></i> 停止偵測';
+            }
+          } else {
+            if (startBtn) {
+              startBtn.disabled = false;
+              startBtn.innerHTML = '<i class="fas fa-play"></i> 開始偵測';
+            }
+            if (stopBtn) {
+              stopBtn.disabled = true;
+              stopBtn.innerHTML = '<i class="fas fa-stop"></i> 偵測已停止';
+            }
+          }
+        } catch (error) {
+          console.error("Update detection buttons error:", error);
+        }
+      }
+
+      async function refreshData() {
+        try {
+          // 顯示載入狀態
+          showLoadingState();
+
+          // 關閉現有的 WebSocket 連接
+          if (websocket) {
+            websocket.close();
+            websocket = null;
+          }
+
+          // 重新載入所有數據
+          await loadData();
+
+          // 重新建立 WebSocket 連接
+          setTimeout(() => {
+            connectWebSocket();
+          }, 1000);
+
+          // 更新偵測按鈕狀態
+          if (userHasPermission("detection_control")) {
+            await updateDetectionButtons();
+          }
+
+          // 隱藏載入狀態
+          hideLoadingState();
+
+          console.log("數據刷新完成");
+        } catch (error) {
+          console.error("刷新數據失敗:", error);
+          hideLoadingState();
+          alert("刷新數據失敗，請稍後再試");
+        }
+      }
+
+      async function logout(skipConfirm = false, reason = null) {
+        console.log("=== logout() 被調用 ===");
+        console.log("skipConfirm:", skipConfirm, "reason:", reason);
+        let reasonToStore = reason;
+        try {
+          if (!skipConfirm) {
+            const confirmed = confirm("確定要登出嗎？");
+            if (!confirmed) return;
+            if (!reasonToStore) {
+              reasonToStore = "user_logout";
+            }
+          }
+
+          if (metricsPollingTimer) {
+            clearInterval(metricsPollingTimer);
+            metricsPollingTimer = null;
+          }
+          clearRefreshTimer();
+          cleanupHlsPlayers([]);
+          if (websocket) {
+            websocket.close();
+            websocket = null;
+          }
+
+          const token = localStorage.getItem("access_token");
+          if (token) {
+            try {
+              await fetch("/auth/logout", {
+                method: "POST",
+                headers: {
+                  Authorization: `Bearer ${token}`,
+                  "Content-Type": "application/json",
+                },
+              });
+            } catch (error) {
+              console.warn("登出 API 調用失敗:", error);
+            }
+          }
+
+          localStorage.removeItem("access_token");
+          localStorage.removeItem("refresh_token");
+          clearPersistedCurrentUser();
+
+          redirectToLogin(reasonToStore);
+        } catch (error) {
+          console.error("登出過程中發生錯誤:", error);
+          localStorage.removeItem("access_token");
+          localStorage.removeItem("refresh_token");
+          clearPersistedCurrentUser();
+          redirectToLogin(reasonToStore || "session_invalid");
+        }
+      }
+
+      // Cleanup
+      window.addEventListener("beforeunload", function () {
+        if (metricsPollingTimer) {
+          clearInterval(metricsPollingTimer);
+          metricsPollingTimer = null;
+        }
+
+        // 停止攝影機健康檢查
+        stopCameraHealthCheck();
+        clearRefreshTimer();
+        if (websocket) websocket.close();
+        cleanupHlsPlayers([]);
+      });
+    </script>
+  </body>
+</html>

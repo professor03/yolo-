@@ -1,0 +1,116 @@
+# YOLO 人流偵測系統 - 單日設定
+model: "yolov8m.pt"
+device: "" # 自動偵測
+conf: 0.25
+iou: 0.7
+imgsz: 640
+max_det: 1000
+
+allowed_classes:
+  - 0
+
+# 性能設定
+use_fp16: false
+batch_size: 1
+num_workers: 4
+pin_memory: true
+
+# 追蹤設定
+track: true
+tracker: "bytetrack.yaml"
+persist: true
+
+# 顯示/輸出
+show: true
+save: false
+outdir: "runs/people_detect"
+
+# 異常偵測
+stay_threshold: 10.0
+crowd_threshold: 5
+
+# 重連設定
+reconnect_attempts: 5
+reconnect_delay: 2.0
+reconnect_backoff: 1.5
+
+# 佇列設定
+queue_size: 10
+drop_frame_policy: "drop_oldest"
+max_queue_wait: 0.1
+enable_queue_monitoring: true
+
+# 監控
+monitor_interval: 5.0
+log_level: "INFO"
+log_file: "detection.log"
+no_log_console: false
+queue_size: 10
+
+# 計數線
+counter:
+  cooldown_frames: 30
+  max_gap_frames: 15
+  max_relink_dist: 40.0
+  history_size: 30
+  uturn_cooldown: 30
+  jitter_frames: 2
+
+lines:
+  - id: "entrance"
+    points: [[100, 200], [500, 200]]
+    direction: "in"
+    uturn_cooldown: 30
+    jitter_frames: 2
+
+  - id: "exit"
+    points: [[100, 400], [500, 400]]
+    direction: "out"
+    uturn_cooldown: 30
+    jitter_frames: 2
+
+  - id: "main_corridor"
+    points: [[300, 100], [300, 500]]
+    direction: "both"
+    uturn_cooldown: 30
+    jitter_frames: 2
+
+# 區域設定
+zones:
+  - id: "waiting_area"
+    polygon: [[50, 50], [600, 50], [600, 300], [50, 300]]
+    ignore: false
+
+  - id: "staff_area"
+    polygon: [[0, 0], [100, 0], [100, 100], [0, 100]]
+    ignore: false
+
+ignore_zones:
+  - id: "camera_blind_spot"
+    polygon: [[0, 0], [50, 0], [50, 50], [0, 50]]
+
+calibration:
+  enabled: true
+  src_points: [[100, 200], [500, 200], [500, 400], [100, 400]]
+  dst_points: [[0.0, 0.0], [2.0, 0.0], [2.0, 1.0], [0.0, 1.0]]
+
+server:
+  enabled: true
+  host: "0.0.0.0"
+  port: 8000
+  log_level: "info"
+
+api:
+  update_interval: 1.0
+  max_alerts: 100
+  alert_retention: 3600
+
+evaluation:
+  enabled: false
+  tolerance: 0.5
+  output_dir: "reports"
+  auto_evaluate: false
+
+# 來源設定
+source_id: "rtsp_camera"
+default_source: "rtsp://camera.example.invalid/stream"

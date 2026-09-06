@@ -1,0 +1,101 @@
+# Camera inventory for HLS transcoding
+# Update this file when adding or editing camera sources.
+defaults:
+  resolution: [1280, 720]
+  fps: 15
+  hls_output_root: "hls"
+  hls:
+    preset: "veryfast"
+    tune: "zerolatency"
+    segment_seconds: 0.5
+    playlist_length: 2
+    delete_segments: true
+  network:
+    rtsp:
+      transport: tcp
+      timeout_ms: 15000000
+      max_delay_us: 2000000
+      buffer_size: 64M
+
+cameras:
+  - id: "camera_1"
+    slug: "rtsp_camera"
+    name: "Main RTSP"
+    protocol: "rtsp"
+    url: "rtsp://camera.example.invalid/stream"
+    username: "admin"
+    password: ""
+    resolution: [1280, 720]
+    fps: 15
+    notes: "Primary sample RTSP stream used by sample.yaml."
+    hls:
+      segment_seconds: 0.5
+      playlist_length: 2
+      delete_segments: true
+    network:
+      rtsp:
+        transport: tcp
+        timeout_ms: 15000000
+        max_delay_us: 2000000
+        buffer_size: 64M
+
+  - id: "camera_2"
+    slug: "mjpg_camera"
+    name: "Lobby MJPEG"
+    protocol: "mjpeg"
+    url: "rtsp://camera.example.invalid/stream"
+    username: "admin"
+    password: ""
+    resolution: [1280, 720]
+    fps: 15
+    notes: "Default MJPEG source for mjpg_camera.yaml."
+    hls:
+      segment_seconds: 0.5
+      playlist_length: 2
+      delete_segments: true
+
+  - id: "rtsp_backup"
+    slug: "rtsp_backup"
+    name: "Backup RTSP"
+    protocol: "rtsp"
+    url: "rtsp://camera.example.invalid/stream"
+    username: "student"
+    password: ""
+    resolution: [1280, 720]
+    fps: 15
+    notes: "Fallback RTSP defined in config.yaml.streaming.rtsp."
+
+  - id: "cam1"
+    slug: "cam1"
+    name: "Entry Gate"
+    protocol: "rtsp"
+    url: "rtsp://camera.example.invalid/stream"
+    username: "admin"
+    password: ""
+    resolution: [1280, 720]
+    fps: 15
+    notes: "First sample camera from multi_cam.yaml."
+
+  - id: "cam2"
+    slug: "cam2"
+    name: "Exit Hall"
+    protocol: "rtsp"
+    url: "rtsp://camera.example.invalid/stream"
+    username: "admin"
+    password: ""
+    resolution: [1280, 720]
+    fps: 15
+    notes: "Second sample camera from multi_cam.yaml."
+
+  - id: "cam3"
+    slug: "cam3"
+    name: "Main Hall"
+    protocol: "rtsp"
+    url: "rtsp://camera.example.invalid/stream"
+    username: "admin"
+    password: ""
+    resolution: [1280, 720]
+    fps: 15
+    notes: "Third sample camera from multi_cam.yaml."
+
+

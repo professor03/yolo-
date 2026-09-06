@@ -1,0 +1,19 @@
+model: yolov8n.pt
+device: cpu
+conf: 0.25
+iou: 0.7
+imgsz: 640
+allowed_classes: [0]
+track: true
+tracker: bytetrack.yaml
+persist: true
+use_fp16: false
+show: false
+save: false
+source_id: local-video
+lines: []
+zones: []
+calibration:
+  enabled: false
+monitor_interval: 5
+log_level: INFO

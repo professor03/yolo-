@@ -1,0 +1,179 @@
+# 角色權限配置檔案
+# YOLO 人流偵測系統 - 角色權限定義
+
+# 角色定義
+roles:
+  admin:
+    name: "管理員"
+    description: "擁有系統完整控制權限"
+    color: "#dc2626"
+    permissions:
+      - "user_management" # 用戶管理
+      - "system_config" # 系統配置
+      - "camera_management" # 攝影機管理
+      - "alert_config" # 警報配置
+      - "log_view" # 日誌查看
+      - "data_export" # 數據導出
+      - "full_access" # 完整訪問
+      - "monitoring" # 監控
+      - "data_analysis" # 數據分析
+      - "alert_management" # 警報管理
+      - "zone_occupancy" # 區域佔用
+      - "data_read" # 數據讀取
+      - "dashboard_view" # 儀表板查看
+      - "reports_view" # 報告查看
+
+  operator:
+    name: "操作員"
+    description: "可以操作監控系統和處理警報"
+    color: "#ea580c"
+    permissions:
+      - "monitoring" # 監控
+      - "data_analysis" # 數據分析
+      - "alert_management" # 警報管理
+      - "zone_occupancy" # 區域佔用
+      - "data_read" # 數據讀取
+      - "dashboard_view" # 儀表板查看
+      - "reports_view" # 報告查看
+
+  viewer:
+    name: "查看者"
+    description: "只能查看數據，無法進行操作"
+    color: "#059669"
+    permissions:
+      - "dashboard_view" # 儀表板查看
+      - "data_read" # 數據讀取
+      - "reports_view" # 報告查看
+
+# 權限定義
+permissions:
+  user_management:
+    name: "用戶管理"
+    description: "創建、修改、刪除用戶帳號"
+    category: "管理"
+
+  system_config:
+    name: "系統配置"
+    description: "修改系統設定和參數"
+    category: "管理"
+
+  camera_management:
+    name: "攝影機管理"
+    description: "添加、移除、配置攝影機"
+    category: "管理"
+
+  alert_config:
+    name: "警報配置"
+    description: "設定警報閾值和通知方式"
+    category: "管理"
+
+  log_view:
+    name: "日誌查看"
+    description: "查看系統日誌和審計記錄"
+    category: "管理"
+
+  data_export:
+    name: "數據導出"
+    description: "導出系統數據和報告"
+    category: "操作"
+
+  full_access:
+    name: "完整訪問"
+    description: "系統完整控制權限"
+    category: "管理"
+
+  monitoring:
+    name: "監控"
+    description: "即時監控系統狀態"
+    category: "操作"
+
+  data_analysis:
+    name: "數據分析"
+    description: "分析人流數據和統計"
+    category: "操作"
+
+  alert_management:
+    name: "警報管理"
+    description: "處理和管理警報"
+    category: "操作"
+
+  zone_occupancy:
+    name: "區域佔用"
+    description: "監控區域佔用情況"
+    category: "操作"
+
+  data_read:
+    name: "數據讀取"
+    description: "讀取系統數據"
+    category: "查看"
+
+  dashboard_view:
+    name: "儀表板查看"
+    description: "查看監控儀表板"
+    category: "查看"
+
+  reports_view:
+    name: "報告查看"
+    description: "查看系統報告"
+    category: "查看"
+
+# 無預設帳號；執行 scripts/create_admin.py 自行建立。
+default_users: {}
+
+# API 端點權限對應
+api_permissions:
+  # 認證相關
+  "POST /auth/login": ["admin", "operator", "viewer"]
+  "POST /auth/logout": ["admin", "operator", "viewer"]
+  "GET /auth/verify": ["admin", "operator", "viewer"]
+  "POST /auth/refresh": ["admin", "operator", "viewer"]
+
+  # 基本監控
+  "GET /api/v1/sources": ["monitoring", "data_read"]
+  "GET /api/v1/metrics": ["monitoring", "data_read"]
+  "GET /api/v1/counts": ["data_analysis", "data_read"]
+  "GET /api/v1/alerts": ["alert_management", "data_read"]
+
+  # 管理員專用
+  "GET /api/v1/admin/users": ["user_management"]
+  "POST /api/v1/admin/users": ["user_management"]
+  "GET /api/v1/admin/system/config": ["system_config"]
+  "POST /api/v1/admin/system/config": ["system_config"]
+  "GET /api/v1/admin/logs": ["log_view"]
+  "POST /api/v1/admin/cameras": ["camera_management"]
+  "DELETE /api/v1/admin/cameras/{camera_id}": ["camera_management"]
+  "GET /api/v1/admin/alerts/config": ["alert_config"]
+  "POST /api/v1/admin/alerts/config": ["alert_config"]
+
+  # 數據導出
+  "GET /api/v1/export/data": ["data_export"]
+
+  # WebSocket
+  "WS /ws/stream": ["dashboard_view", "monitoring", "data_read"]
+
+# 前端功能權限對應
+frontend_permissions:
+  # 基本功能 (所有角色)
+  dashboard_view: true
+  data_read: true
+  refresh_data: true
+
+  # 操作功能 (操作員和管理員)
+  start_detection: ["operator", "admin"]
+  stop_detection: ["operator", "admin"]
+  alert_management: ["operator", "admin"]
+  data_analysis: ["operator", "admin"]
+
+  # 管理功能 (僅管理員)
+  user_management: ["admin"]
+  system_config: ["admin"]
+  camera_management: ["admin"]
+  log_view: ["admin"]
+  data_export: ["admin"]
+  full_access: ["admin"]
+
+# 權限繼承規則
+permission_inheritance:
+  admin: ["operator", "viewer"] # 管理員繼承操作員和查看者權限
+  operator: ["viewer"] # 操作員繼承查看者權限
+  viewer: [] # 查看者無繼承權限

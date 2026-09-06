@@ -1,0 +1,378 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>YOLO 人流偵測系統 - 登入</title>
+    <style>
+      * {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+      }
+
+      body {
+        font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        min-height: 100vh;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+      }
+
+      .login-container {
+        background: white;
+        padding: 2rem;
+        border-radius: 10px;
+        box-shadow: 0 15px 35px rgba(0, 0, 0, 0.1);
+        width: 100%;
+        max-width: 400px;
+      }
+
+      .login-header {
+        text-align: center;
+        margin-bottom: 2rem;
+      }
+
+      .login-header h1 {
+        color: #333;
+        font-size: 1.8rem;
+        margin-bottom: 0.5rem;
+      }
+
+      .login-header p {
+        color: #666;
+        font-size: 0.9rem;
+      }
+
+      .form-group {
+        margin-bottom: 1.5rem;
+      }
+
+      .form-group label {
+        display: block;
+        margin-bottom: 0.5rem;
+        color: #333;
+        font-weight: 500;
+      }
+
+      .form-group input {
+        width: 100%;
+        padding: 0.75rem;
+        border: 2px solid #e1e5e9;
+        border-radius: 5px;
+        font-size: 1rem;
+        transition: border-color 0.3s ease;
+      }
+
+      .form-group input:focus {
+        outline: none;
+        border-color: #667eea;
+      }
+
+      .login-button {
+        width: 100%;
+        padding: 0.75rem;
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+        border: none;
+        border-radius: 5px;
+        font-size: 1rem;
+        font-weight: 500;
+        cursor: pointer;
+        transition: transform 0.2s ease;
+      }
+
+      .login-button:hover {
+        transform: translateY(-2px);
+      }
+
+      .login-button:disabled {
+        opacity: 0.6;
+        cursor: not-allowed;
+        transform: none;
+      }
+
+      .error-message {
+        background: #fee;
+        color: #c33;
+        padding: 0.75rem;
+        border-radius: 5px;
+        margin-bottom: 1rem;
+        display: none;
+      }
+
+      .success-message {
+        background: #efe;
+        color: #3c3;
+        padding: 0.75rem;
+        border-radius: 5px;
+        margin-bottom: 1rem;
+        display: none;
+      }
+
+      .demo-accounts {
+        margin-top: 1.5rem;
+        padding: 1rem;
+        background: #f8f9fa;
+        border-radius: 5px;
+        font-size: 0.9rem;
+      }
+
+      .demo-accounts h3 {
+        color: #333;
+        margin-bottom: 0.5rem;
+      }
+
+      .demo-accounts p {
+        color: #666;
+        margin-bottom: 0.25rem;
+      }
+
+      .loading {
+        display: none;
+        text-align: center;
+        margin-top: 1rem;
+      }
+
+      .spinner {
+        border: 2px solid #f3f3f3;
+        border-top: 2px solid #667eea;
+        border-radius: 50%;
+        width: 20px;
+        height: 20px;
+        animation: spin 1s linear infinite;
+        margin: 0 auto;
+      }
+
+      @keyframes spin {
+        0% {
+          transform: rotate(0deg);
+        }
+        100% {
+          transform: rotate(360deg);
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <div class="login-container">
+      <div class="login-header">
+        <h1>🔐 系統登入</h1>
+        <p>YOLO 人流偵測系統</p>
+      </div>
+
+      <div class="error-message" id="errorMessage"></div>
+      <div class="success-message" id="successMessage"></div>
+
+      <form id="loginForm">
+        <div class="form-group">
+          <label for="username">用戶名</label>
+          <input type="text" id="username" name="username" required />
+        </div>
+
+        <div class="form-group">
+          <label for="password">密碼</label>
+          <input type="password" id="password" name="password" required />
+        </div>
+
+        <button type="submit" class="login-button" id="loginButton">
+          登入
+        </button>
+      </form>
+
+      <div class="loading" id="loading">
+        <div class="spinner"></div>
+        <p>登入中...</p>
+      </div>
+
+      <div class="demo-accounts">
+        <h3>使用你的帳號</h3>
+        <p>請使用首次啟動時自行建立的帳號與密碼。</p>
+        <p>本系統不提供共用示範帳號。</p>
+      </div>
+    </div>
+
+    <script>
+      const AUTH_MESSAGE_KEY = "auth_message";
+
+      class LoginManager {
+        constructor() {
+          this.form = document.getElementById("loginForm");
+          this.usernameInput = document.getElementById("username");
+          this.passwordInput = document.getElementById("password");
+          this.loginButton = document.getElementById("loginButton");
+          this.loading = document.getElementById("loading");
+          this.errorMessage = document.getElementById("errorMessage");
+          this.successMessage = document.getElementById("successMessage");
+
+          this.init();
+        }
+
+        init() {
+          this.displayAuthMessage();
+          this.form.addEventListener("submit", this.handleLogin.bind(this));
+
+          // 檢查是否已經登入
+          this.checkExistingAuth();
+        }
+
+        displayAuthMessage() {
+          let messageCode = null;
+          try {
+            messageCode = sessionStorage.getItem(AUTH_MESSAGE_KEY);
+            if (messageCode) {
+              sessionStorage.removeItem(AUTH_MESSAGE_KEY);
+            }
+          } catch (error) {
+            console.warn("讀取登入提示失敗:", error);
+            return;
+          }
+
+          if (!messageCode) {
+            return;
+          }
+
+          const mapping = {
+            session_expired: {
+              type: "error",
+              text: "登入已過期，請重新登入。",
+            },
+            session_invalid: {
+              type: "error",
+              text: "登入狀態無效，請重新登入。",
+            },
+            login_required: { type: "error", text: "請先登入以使用系統。" },
+            user_logout: { type: "success", text: "您已成功登出。" },
+          };
+
+          const config = mapping[messageCode] || {
+            type: "error",
+            text: "請重新登入以繼續。",
+          };
+
+          if (config.type === "success") {
+            this.showSuccess(config.text);
+          } else {
+            this.showError(config.text);
+          }
+        }
+
+        async checkExistingAuth() {
+          const token = localStorage.getItem("access_token");
+          if (token) {
+            try {
+              const response = await fetch("/auth/me", {
+                headers: {
+                  Authorization: `Bearer ${token}`,
+                },
+              });
+
+              if (response.ok) {
+                // 已經登入，跳轉到儀表板
+                window.location.href = "/index.html";
+              } else {
+                // 令牌無效，清除
+                localStorage.removeItem("access_token");
+                localStorage.removeItem("refresh_token");
+                // 不跳轉，讓用戶看到登入頁面
+              }
+            } catch (error) {
+              console.error("檢查認證狀態失敗:", error);
+              localStorage.removeItem("access_token");
+              localStorage.removeItem("refresh_token");
+              // 不跳轉，讓用戶看到登入頁面
+            }
+          }
+          // 如果沒有 token，就顯示登入頁面，不跳轉
+        }
+
+        async handleLogin(event) {
+          event.preventDefault();
+
+          const username = this.usernameInput.value.trim();
+          const password = this.passwordInput.value;
+
+          if (!username || !password) {
+            this.showError("請輸入用戶名和密碼");
+            return;
+          }
+
+          this.setLoading(true);
+
+          try {
+            const response = await fetch("/auth/login", {
+              method: "POST",
+              headers: {
+                "Content-Type": "application/json",
+              },
+              body: JSON.stringify({
+                username: username,
+                password: password,
+              }),
+            });
+
+            const data = await response.json();
+
+            if (response.ok) {
+              // 登入成功
+              localStorage.setItem("access_token", data.access_token);
+              localStorage.setItem("refresh_token", data.refresh_token);
+
+              try {
+                sessionStorage.removeItem(AUTH_MESSAGE_KEY);
+              } catch (error) {
+                console.warn("清除登入提示失敗:", error);
+              }
+
+              if (data.user) {
+                try {
+                  sessionStorage.setItem(
+                    "current_user",
+                    JSON.stringify(data.user)
+                  );
+                } catch (error) {
+                  console.warn("暫存用戶資訊失敗:", error);
+                }
+              }
+
+              this.showSuccess("登入成功，正在跳轉...");
+
+              setTimeout(() => {
+                window.location.href = "/index.html";
+              }, 1000);
+            } else {
+              // 登入失敗
+              this.showError(data.detail || "登入失敗");
+            }
+          } catch (error) {
+            console.error("登入錯誤:", error);
+            this.showError("網路錯誤，請稍後再試");
+          } finally {
+            this.setLoading(false);
+          }
+        }
+
+        setLoading(loading) {
+          this.loginButton.disabled = loading;
+          this.loading.style.display = loading ? "block" : "none";
+        }
+
+        showError(message) {
+          this.errorMessage.textContent = message;
+          this.errorMessage.style.display = "block";
+          this.successMessage.style.display = "none";
+        }
+
+        showSuccess(message) {
+          this.successMessage.textContent = message;
+          this.successMessage.style.display = "block";
+          this.errorMessage.style.display = "none";
+        }
+      }
+
+      // 初始化登入管理器
+      new LoginManager();
+    </script>
+  </body>
+</html>
