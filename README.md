@@ -10,6 +10,16 @@
 
 English: A computer-vision prototype for person detection, tracking, line/zone events and a FastAPI dashboard. LearnSight connects aggregate person counts to study sessions. No personal footage or model weights are bundled.
 
+## 先看真實辨識成果
+
+![原始影片與 YOLO 人物偵測結果對照](docs/assets/detection/before-after.jpg)
+
+左：原始影片；右：實際 YOLOv8n＋ByteTrack 輸出的 **6 個人物框與追蹤 ID**。不是手動畫框或生成示意圖。這是人物偵測，不是學生動作、身分或專注度辨識。
+
+[**初學者圖文指南：逐張看懂成果、操作與限制**](docs/visual-guide.md) 包含 10／11／12 秒的連續影格、6／5／7 個模型偵測框、輸出紀錄及自行匯出照片的指令。照片的來源與授權狀態也在指南中說明。
+
+[觀看既有三專案截圖與流程解說影片](docs/assets/三專案_截圖與流程解說.webm)（截圖解說，並非本次 YOLO 即時推論錄影）。
+
 ## 導覽
 
 | 想了解 | 閱讀入口 |
