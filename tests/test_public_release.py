@@ -56,6 +56,10 @@ def test_safe_startup_and_authenticated_learnsight():
     users.create_user(username='release-test', password=password,
                       role='admin', permissions=DEFAULT_ROLE_PERMISSIONS['admin'])
     with TestClient(app) as client:
+        preflight = client.options('/api/v1/learnsight/sessions', headers={
+            'Origin': 'http://127.0.0.1:8787', 'Access-Control-Request-Method':'POST',
+            'Access-Control-Request-Headers':'authorization,content-type'})
+        assert preflight.headers['access-control-allow-origin'] == 'http://127.0.0.1:8787'
         assert app.state.camera_manager.get_sources() == {}
         # Disabling camera workers must also disable the on-demand fallback.
         assert client.get('/video_feed?camera=rtsp_camera').status_code == 503
@@ -76,3 +80,4 @@ def test_safe_startup_and_authenticated_learnsight():
         assert synced.json()['present_now'] is True
         assert client.post(f'/api/v1/learnsight/sessions/{sid}/end', headers=headers).json()['status'] == 'ended'
         assert client.get('/learnsight.html').status_code == 200
+

@@ -20,6 +20,14 @@ English: A computer-vision prototype for person detection, tracking, line/zone e
 
 [觀看既有三專案截圖與流程解說影片](docs/assets/三專案_截圖與流程解說.webm)（截圖解說，並非本次 YOLO 即時推論錄影）。
 
+## 與 AI 學習系統的真實整合（2026-09-12）
+
+已驗證 YOLO 本機影片推論 → FastAPI → AI 學習系統 LearnSight → 已結束時段紀錄。加入指定來源、30 秒時效檢查、重複訊號去重，以及停止偵測不誤判為零人的處理。AI 端切到筆記頁仍持續同步。
+
+[整合操作與實跑截圖](https://github.com/professor03/AI-Learning-System/blob/main/docs/yolo-integration.md) · [LearnSight API 契約](docs/learnsight.md)
+
+筆電鏡頭可明確執行 `python scripts/detect_camera.py --camera-index 0 --duration 180 --show`，在學習系統選 `local-camera` 來源；此硬體路徑尚未現場實測，0 也不保證是前置鏡頭。自動測試不會開啟鏡頭。
+
 ## 導覽
 
 | 想了解 | 閱讀入口 |

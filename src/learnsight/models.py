@@ -15,6 +15,7 @@ class StartStudySessionRequest(BaseModel):
     study_goal: str = Field(..., min_length=1, max_length=240)
     planned_minutes: int = Field(..., ge=5, le=480)
     source_id: str = Field(default="default", min_length=1, max_length=100)
+    detector_source_id: Optional[str] = Field(default=None, min_length=1, max_length=100)
 
 
 class DetectorObservationRequest(BaseModel):
@@ -38,3 +39,10 @@ class StudySessionResponse(BaseModel):
     away_reminder_eligible: bool
     observation_count: int
     note: str
+    person_count: Optional[int] = None
+    last_observed_at: Optional[datetime] = None
+    detector_source_id: Optional[str] = None
+    signal_origin: str = "none"
+    signal_status: str = "waiting"
+    signal_max_age_seconds: int = 30
+

@@ -7,6 +7,7 @@ from src.auth.security import get_security_manager
 
 from .models import DetectorObservationRequest, StartStudySessionRequest, StudySessionResponse
 from .service import learnsight_service
+from .telemetry import select_observation
 
 
 router = APIRouter(prefix="/api/v1/learnsight", tags=["LearnSight"])
@@ -61,20 +62,20 @@ def record_observation(
 @router.post("/sessions/{session_id}/sync", response_model=StudySessionResponse)
 def sync_detector_metrics(session_id: str, _: dict = Depends(get_current_user)) -> StudySessionResponse:
     """Record only the latest aggregate person count from the shared detector store."""
-    metrics = data_store.get_current_metrics()
-    if not metrics:
-        raise HTTPException(
-            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
-            detail="目前沒有可用的偵測資料；請先以本機影片啟動偵測流程。",
-        )
+    session = _not_found_or_invalid(lambda: learnsight_service.get(session_id))
+    if session.status == 'ended':
+        raise HTTPException(status_code=409, detail='已結束的讀書時段不能再同步')
     try:
-        person_count = max(0, int(metrics.get("people_count", 0)))
-    except (TypeError, ValueError):
-        person_count = 0
+        person_count, observed_at, source_id = select_observation(
+            data_store.get_current_metrics(), data_store.get_sources(), session.detector_source_id)
+    except ValueError as exc:
+        _not_found_or_invalid(lambda: learnsight_service.mark_unavailable(session_id, str(exc)))
+        raise HTTPException(status_code=503, detail=str(exc)) from exc
     return _not_found_or_invalid(
         lambda: learnsight_service.observe(
             session_id,
-            DetectorObservationRequest(person_count=person_count),
+            DetectorObservationRequest(person_count=person_count, observed_at=observed_at),
+            detector_source_id=source_id,
         )
     )
 
@@ -82,3 +83,4 @@ def sync_detector_metrics(session_id: str, _: dict = Depends(get_current_user)) 
 @router.post("/sessions/{session_id}/end", response_model=StudySessionResponse)
 def end_session(session_id: str, _: dict = Depends(get_current_user)) -> StudySessionResponse:
     return _not_found_or_invalid(lambda: learnsight_service.end(session_id))
+
