@@ -26,7 +26,7 @@ English: A computer-vision prototype for person detection, tracking, line/zone e
 
 [整合操作與實跑截圖](https://github.com/professor03/AI-Learning-System/blob/main/docs/yolo-integration.md) · [LearnSight API 契約](docs/learnsight.md)
 
-筆電鏡頭可明確執行 `python scripts/detect_camera.py --camera-index 0 --duration 180 --show`，在學習系統選 `local-camera` 來源；此硬體路徑尚未現場實測，0 也不保證是前置鏡頭。自動測試不會開啟鏡頭。
+筆電鏡頭可執行 `python scripts/detect_camera.py --camera-index 0 --duration 180 --show`，並在學習系統選擇 `local-camera` 來源。2026-09-14 已以索引 0 完成本機前置鏡頭實測；不同裝置的鏡頭索引仍可能不同，自動測試也不會開啟鏡頭。
 
 ## 本人前置鏡頭完整實測（2026-09-14）
 
