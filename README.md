@@ -28,6 +28,14 @@ English: A computer-vision prototype for person detection, tracking, line/zone e
 
 筆電鏡頭可明確執行 `python scripts/detect_camera.py --camera-index 0 --duration 180 --show`，在學習系統選 `local-camera` 來源；此硬體路徑尚未現場實測，0 也不保證是前置鏡頭。自動測試不會開啟鏡頭。
 
+## 本人前置鏡頭完整實測（2026-09-14）
+
+![本人前置鏡頭入鏡、離開與返回](docs/assets/learnsight-front-camera-1-0-1.jpg)
+
+[觀看 67.9 秒完整實測影片](docs/assets/learnsight-front-camera-1-0-1-demo.mp4)
+
+本次以本人筆電前置鏡頭完成「入鏡 → 離開 → 返回」的 `1 → 0 → 1` 流程。YOLO 視窗的人物框與 LearnSight 的有人／無人狀態同步變化，證明鏡頭輸入、人物推論、FastAPI 訊號與學習系統頁面能串接運作。這項證據不等同學生動作分類、專注度判定或正式準確率評估。
+
 ## 導覽
 
 | 想了解 | 閱讀入口 |
