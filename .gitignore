@@ -40,3 +40,5 @@ reports/
 .DS_Store
 Thumbs.db
 
+# Browser/cloud demo local model settings
+.ultralytics-browser/

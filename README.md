@@ -10,6 +10,17 @@
 
 English: A computer-vision prototype for person detection, tracking, line/zone events and a FastAPI dashboard. LearnSight connects aggregate person counts to study sessions. No personal footage or model weights are bundled.
 
+## Codespaces 實戰 Demo
+
+[一鍵建立 AI 學習系統＋YOLO Codespace](https://codespaces.new/professor03/AI-Learning-System)
+· [完整雲端操作、隱私與限制](https://github.com/professor03/AI-Learning-System/blob/main/docs/codespaces-demo.md)
+
+雲端入口改用 `src.server.browser_demo:app`：訪客明確同意後，以自己的
+瀏覽器鏡頭或圖片送入真正 YOLOv8n／CPU 推論，再更新 LearnSight。
+訪客憑證與時段彼此隔離；影格只在記憶體處理，不公開本機管理端點。
+本機 `scripts/serve_demo.py` 的原有行為不變，不應直接公開至網路。
+Codespaces 的公開網址必須由擁有者啟動及設為 Public，並非永久在線的主機。
+
 ## 先看真實辨識成果
 
 ![原始影片與 YOLO 人物偵測結果對照](docs/assets/detection/before-after.jpg)
