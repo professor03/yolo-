@@ -1,13 +1,12 @@
-# 發布驗證 · 2026-09-06
+# 發布驗證 · 更新 2026-09-30
 
 ## 公開 API 流程
 
-以全新 .venv-release 安裝 requirements-smoke.txt，
-執行下列指定測試：25 passed，4 個 UTC 時間 API 棄用警告。
-pip check 回報沒有損壞的套件依賴。
+以公開需求環境執行下列指定測試：**38 passed，0 warnings**。本次也將
+`datetime.utcnow()` 改為保留既有 naive UTC 儲存語意、但不使用已棄用 API 的實作。
 
 ```powershell
-python -m pytest tests/test_public_release.py tests/test_learnsight.py tests/test_geometry.py tests/test_calibration.py -q -p no:cacheprovider
+python -m pytest tests/test_public_release.py tests/test_learnsight.py tests/test_geometry.py tests/test_calibration.py tests/test_learnsight_telemetry.py -q -p no:cacheprovider
 ```
 
 其中包含攝影機停用時 /video_feed 回傳 503，

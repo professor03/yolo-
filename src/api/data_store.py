@@ -3,7 +3,7 @@ import json
 import os
 import threading
 import time
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from pathlib import Path
 from typing import Dict, List, Optional, Any
 
@@ -13,6 +13,11 @@ import tempfile
 import numpy as np
 
 logger = logging.getLogger(__name__)
+
+
+def _utc_now_naive() -> datetime:
+    """Return naive UTC for compatibility with existing JSON timestamps."""
+    return datetime.now(timezone.utc).replace(tzinfo=None)
 
 
 class DataStore:
@@ -25,7 +30,7 @@ class DataStore:
         self.storage_path = Path(storage_path or default_path)
         self.storage_path.parent.mkdir(parents=True, exist_ok=True)
         self._state = {
-            "start_time": datetime.utcnow().isoformat(),
+            "start_time": _utc_now_naive().isoformat(),
             "sources": {},
             "current_metrics": None,
             "stream_metrics": {},
@@ -145,7 +150,7 @@ class DataStore:
             "latency_ms": _avg([m.get("latency_ms", 0.0) for m in metrics_list]),
             "cpu_percent": _avg([m.get("cpu_percent", 0.0) for m in metrics_list]),
             "memory_mb": _avg([m.get("memory_mb", 0.0) for m in metrics_list]),
-            "timestamp": datetime.utcnow().isoformat(),
+            "timestamp": _utc_now_naive().isoformat(),
             "stream_count": len(metrics_list),
             "streams": stream_metrics,
         }
@@ -172,7 +177,7 @@ class DataStore:
     ) -> None:
         with self.lock:
             self._load_state()
-            now = datetime.utcnow()
+            now = _utc_now_naive()
             
             # 獲取現有數據以保持某些字段
             existing = self._state.setdefault("sources", {}).get(source_id, {})
@@ -227,7 +232,7 @@ class DataStore:
                 metric_data = metrics.copy()
                 stream_id = metric_data.get("stream_id", stream_id)
                 metric_data.setdefault("stream_id", stream_id)
-                metric_data.setdefault("timestamp", datetime.utcnow().isoformat())
+                metric_data.setdefault("timestamp", _utc_now_naive().isoformat())
                 metric_data.setdefault("fps_processing", 0.0)
                 metric_data.setdefault("fps_source", 0.0)
                 metric_data.setdefault("people_count", 0)
@@ -237,7 +242,7 @@ class DataStore:
             else:
                 metric_data = {
                     "stream_id": stream_id,
-                    "timestamp": datetime.utcnow().isoformat(),
+                    "timestamp": _utc_now_naive().isoformat(),
                     "fps_processing": fps_processing,
                     "fps_source": fps_source,
                     "people_count": people_count,
@@ -267,7 +272,7 @@ class DataStore:
             alerts: List[Dict[str, Any]] = self._state.get("alerts", [])
             alerts.append(
                 {
-                    "timestamp": datetime.utcnow().isoformat(),
+                    "timestamp": _utc_now_naive().isoformat(),
                     "level": level,
                     "message": message,
                     "source_id": source_id,
@@ -286,7 +291,7 @@ class DataStore:
             object_counts = self._state.get("object_counts", {})
             for detection in detections:
                 detection = detection.copy()
-                detection["timestamp"] = datetime.utcnow().isoformat()
+                detection["timestamp"] = _utc_now_naive().isoformat()
                 recent.append(detection)
                 class_name = detection.get("class_name", "unknown")
                 object_counts[class_name] = object_counts.get(class_name, 0) + 1
@@ -303,13 +308,13 @@ class DataStore:
         self._load_state()
         start_iso = self._state.get("start_time")
         try:
-            start_time = datetime.fromisoformat(start_iso) if start_iso else datetime.utcnow()
+            start_time = datetime.fromisoformat(start_iso) if start_iso else _utc_now_naive()
         except ValueError:
-            start_time = datetime.utcnow()
+            start_time = _utc_now_naive()
         return {
             "status": "healthy",
-            "timestamp": datetime.utcnow().isoformat(),
-            "uptime": (datetime.utcnow() - start_time).total_seconds(),
+            "timestamp": _utc_now_naive().isoformat(),
+            "uptime": (_utc_now_naive() - start_time).total_seconds(),
         }
 
     def get_sources(self) -> List[Dict]:
@@ -322,7 +327,7 @@ class DataStore:
         with self.lock:
             self._load_state()
             sources = self._state.get("sources", {})
-            now = datetime.utcnow()
+            now = _utc_now_naive()
             
             health_data = {}
             for source_id, source_data in sources.items():
@@ -364,7 +369,7 @@ class DataStore:
     def get_metrics_history(self, minutes: int = 60) -> List[Dict]:
         with self.lock:
             self._load_state()
-            cutoff = datetime.utcnow() - timedelta(minutes=minutes)
+            cutoff = _utc_now_naive() - timedelta(minutes=minutes)
             history = self._state.get("metrics_history", [])
             result = []
             for item in history:
@@ -397,7 +402,7 @@ class DataStore:
                         "in": in_count,
                         "out": out_count,
                         "total": total,
-                        "last_updated": datetime.utcnow().isoformat(),
+                        "last_updated": _utc_now_naive().isoformat(),
                     }
                 )
             return result
@@ -411,7 +416,7 @@ class DataStore:
     def get_detections_history(self, minutes: int = 60) -> List[Dict]:
         with self.lock:
             self._load_state()
-            cutoff = datetime.utcnow() - timedelta(minutes=minutes)
+            cutoff = _utc_now_naive() - timedelta(minutes=minutes)
             result = []
             for detection in self._state.get("recent_detections", []):
                 ts = detection.get("timestamp")

@@ -46,6 +46,8 @@ English: A computer-vision prototype for person detection, tracking, line/zone e
 | LearnSight：API 與限制 | [LearnSight 說明](docs/learnsight.md) |
 | 問題回報 | [Issues](https://github.com/professor03/yolo-/issues) · [貢獻指南](CONTRIBUTING.md) |
 
+![YOLO 與 LearnSight 系統架構](docs/assets/architecture-yolo-learnsight.svg)
+
 ## 已有功能
 
 - **人物偵測與追蹤**：YOLOv8 人物框、追蹤 ID、CPU 推論、可設定的門檻與追蹤器。
@@ -126,12 +128,12 @@ docs/                  專題、架構、操作、限制
 ## 測試與成果界線
 
 ```powershell
-python -m pytest tests/test_public_release.py tests/test_learnsight.py tests/test_geometry.py tests/test_calibration.py -q
+python -m pytest tests/test_public_release.py tests/test_learnsight.py tests/test_geometry.py tests/test_calibration.py tests/test_learnsight_telemetry.py -q -p no:cacheprovider
 ```
 
-CI 使用 `requirements-smoke.txt` 執行相同測試，不下載模型、不連攝影機。涵蓋真實登入、受保護 API、無資料回應、人物同步、時段結束、幾何與校正。歷史測試未全部遷移，綠色 CI 不代表整份原型完成生產驗證。
+CI 使用 `requirements-smoke.txt` 執行相同測試，不下載模型、不連攝影機。涵蓋真實登入、受保護 API、無資料回應、人物同步、來源與時間戳有效性、時段結束、幾何與校正。歷史測試未全部遷移，綠色 CI 不代表整份原型完成生產驗證。
 
-最新發布檢查：乾淨環境公開測試 **25 項通過**；本機 yolov8n / CPU
+最新發布檢查（2026-09-30）：公開測試 **38 項通過、0 項警告**；本機 yolov8n / CPU
 試跑處理 **21 個影格、約 3.48 FPS**。完整環境、指令及限制見
 [發布驗證](docs/release-validation.md)。目前適用本機展示，LearnSight
 時段持久化、多使用者隔離與進階串流授權仍待完成。

@@ -4,7 +4,7 @@
 定義 SQLite 資料庫的表結構和關聯
 """
 
-from datetime import datetime
+from datetime import datetime, timezone
 from typing import Optional, List
 from sqlalchemy import (
     Column,
@@ -28,6 +28,11 @@ from pathlib import Path
 Base = declarative_base()
 
 
+def _utc_now_naive() -> datetime:
+    """Return naive UTC for SQLite compatibility without deprecated utcnow()."""
+    return datetime.now(timezone.utc).replace(tzinfo=None)
+
+
 class User(Base):
     """用戶表"""
 
@@ -39,8 +44,8 @@ class User(Base):
     role = Column(String(20), nullable=False, default="viewer")
     is_active = Column(Boolean, default=True, index=True)
     permissions_json = Column(Text, nullable=True)
-    created_at = Column(DateTime, default=datetime.utcnow)
-    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    created_at = Column(DateTime, default=_utc_now_naive)
+    updated_at = Column(DateTime, default=_utc_now_naive, onupdate=_utc_now_naive)
     
     # 關聯關係
     cameras = relationship("Camera", back_populates="owner", cascade="all, delete-orphan")
@@ -75,8 +80,8 @@ class Camera(Base):
     protocol = Column(String(20), nullable=False, default="rtsp")
     description = Column(Text, nullable=True)
     enabled = Column(Boolean, default=True, index=True)
-    created_at = Column(DateTime, default=datetime.utcnow)
-    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    created_at = Column(DateTime, default=_utc_now_naive)
+    updated_at = Column(DateTime, default=_utc_now_naive, onupdate=_utc_now_naive)
     last_tested_at = Column(DateTime, nullable=True)
     last_test_status = Column(String(20), nullable=True)
     last_test_message = Column(Text, nullable=True)
@@ -102,7 +107,7 @@ class DetectionEvent(Base):
     __tablename__ = "detection_events"
     
     id = Column(Integer, primary_key=True, index=True)
-    timestamp = Column(DateTime, default=datetime.utcnow, index=True)
+    timestamp = Column(DateTime, default=_utc_now_naive, index=True)
     source_id = Column(String(100), nullable=False, index=True)
     event_type = Column(String(50), nullable=False, index=True)  # 'person_detected', 'line_crossing', 'zone_entry', etc.
     
@@ -141,7 +146,7 @@ class LineCount(Base):
     __tablename__ = "line_counts"
     
     id = Column(Integer, primary_key=True, index=True)
-    timestamp = Column(DateTime, default=datetime.utcnow, index=True)
+    timestamp = Column(DateTime, default=_utc_now_naive, index=True)
     line_id = Column(String(50), nullable=False, index=True)
     direction = Column(String(20), nullable=False)  # 'in', 'out'
     count = Column(Integer, default=0)
@@ -159,7 +164,7 @@ class ZoneOccupancy(Base):
     __tablename__ = "zone_occupancy"
     
     id = Column(Integer, primary_key=True, index=True)
-    timestamp = Column(DateTime, default=datetime.utcnow, index=True)
+    timestamp = Column(DateTime, default=_utc_now_naive, index=True)
     zone_id = Column(String(50), nullable=False, index=True)
     occupancy_count = Column(Integer, default=0)
     session_id = Column(String(100), nullable=True, index=True)
@@ -176,7 +181,7 @@ class SystemMetrics(Base):
     __tablename__ = "system_metrics"
     
     id = Column(Integer, primary_key=True, index=True)
-    timestamp = Column(DateTime, default=datetime.utcnow, index=True)
+    timestamp = Column(DateTime, default=_utc_now_naive, index=True)
     
     # 性能指標
     fps_processing = Column(Float, nullable=True)
@@ -212,7 +217,7 @@ class Alert(Base):
     __tablename__ = "alerts"
     
     id = Column(Integer, primary_key=True, index=True)
-    timestamp = Column(DateTime, default=datetime.utcnow, index=True)
+    timestamp = Column(DateTime, default=_utc_now_naive, index=True)
     
     # 警報信息
     level = Column(String(20), nullable=False, index=True)  # 'info', 'warning', 'error', 'critical'
@@ -243,7 +248,7 @@ class Session(Base):
     
     id = Column(Integer, primary_key=True, index=True)
     session_id = Column(String(100), unique=True, nullable=False, index=True)
-    start_time = Column(DateTime, default=datetime.utcnow, index=True)
+    start_time = Column(DateTime, default=_utc_now_naive, index=True)
     end_time = Column(DateTime, nullable=True, index=True)
     
     # 會話信息
